@@ -1,6 +1,6 @@
 Burst model grid
 ----------------
-The file `johnston_2020.txt` covers the full grid of 3040 KEPLER burst simulations used in Johnston et al. (2020).\
+The file `johnston_2020.txt` covers the full grid of 3840 KEPLER burst simulations used in Johnston et al. (2020).\
 Please refer to the paper for additional detail on the models and quantities below.
 
 Each row corresponds to a model, and the columns list the input parameters and the resulting burst properties.
