@@ -24,10 +24,6 @@ class BurstFit:
 
     def __init__(self,
                  source,
-                 verbose=True,
-                 lhood_factor=1,
-                 debug=False,
-                 priors_only=False,
                  re_interp=False,
                  u_fper_frac=0.0,
                  u_fedd_frac=0.0,
@@ -38,7 +34,6 @@ class BurstFit:
             Newtonian get_radius (km) used in Kepler
         """
         self.source = source
-        self.verbose = verbose
 
         self.param_idxs = {}
         self.interp_idxs = {}
@@ -56,15 +51,8 @@ class BurstFit:
         self.zero_lhood = zero_lhood
         self.u_fper_frac = u_fper_frac
         self.u_fedd_frac = u_fedd_frac
-        self.lhood_factor = lhood_factor
-        self.priors_only = priors_only
 
-        if self.mcmc_version.synthetic:
-            interp_source = self.mcmc_version.interp_source
-        else:
-            interp_source = self.source
-
-        self.kemulator = interpolator.Kemulator(source=interp_source,
+        self.kemulator = interpolator.Kemulator(source=source,
                                                 version=self.mcmc_version.interpolator,
                                                 re_interp=re_interp)
         self.obs = None
@@ -73,10 +61,6 @@ class BurstFit:
         self.extract_obs_values()
 
         self.priors = self.mcmc_version.priors
-
-    def printv(self, string, **kwargs):
-        if self.verbose:
-            print(string, **kwargs)
 
     def get_indexes(self):
         """Extracts indexes of parameters and burst properties
@@ -141,22 +125,18 @@ class BurstFit:
             whether to plot the comparison
         """
         params = self.get_params_dict(x=x)
-        zero_lhood = self.zero_lhood * self.lhood_factor
 
         # ===== check priors =====
         try:
             lp = self.lnprior(x=x, params=params)
         except ZeroLhood:
-            return zero_lhood
-
-        if self.priors_only:
-            return lp * self.lhood_factor
+            return self.zero_lhood
 
         # ===== Interpolate and calculate local model burst properties =====
         try:
             interp_local, analytic_local = self.get_model_local(params=params)
         except ZeroLhood:
-            return zero_lhood
+            return self.zero_lhood
 
         # ===== Shift all burst properties to observable quantities =====
         interp_shifted, analytic_shifted = self.get_model_shifted(
@@ -164,30 +144,11 @@ class BurstFit:
                                                     analytic_local=analytic_local,
                                                     params=params)
 
-        # ===== Setup plotting =====
-        n_bprops = len(self.mcmc_version.bprops)
-        if plot:
-            n_rows = int(np.ceil(n_bprops/2))
-            subplot_width = 3
-            subplot_height = 2.5
-
-            fig, ax = plt.subplots(n_rows, 2, sharex=True,
-                                   figsize=(2*subplot_width, n_rows * subplot_height))
-            if n_bprops % 2 == 1:
-                ax[-1, -1].axis('off')
-        else:
-            fig = ax = None
-
         # ===== Evaluate likelihoods against observed data =====
-        lh = self.compare_all(interp_shifted, analytic_shifted, ax=ax, plot=plot)
-        lhood = (lp + lh) * self.lhood_factor
+        lh = self.compare_all(interp_shifted, analytic_shifted)
+        lhood = lp + lh
 
-        # ===== Finalise plotting =====
-        if plot:
-            plt.show(block=False)
-            return lhood, fig
-        else:
-            return lhood
+        return lhood
 
     def bprop_sample(self, x, params=None):
         """Returns the predicted observables for a given sample of parameters
@@ -304,7 +265,7 @@ class BurstFit:
                                                     bprop=bprop, params=params)
         return interp_shifted, analytic_shifted
 
-    def compare_all(self, interp_shifted, analytic_shifted, ax, plot=False):
+    def compare_all(self, interp_shifted, analytic_shifted):
         """Compares all bprops against observations and returns total likelihood
         """
         lh = 0.0
@@ -455,9 +416,6 @@ class BurstFit:
         """
         obs = self.obs_data[bprop]
         u_obs = self.obs_data[f'u_{bprop}']
-
-        pyprint.check_same_length(model, obs, 'model and obs arrays')
-        pyprint.check_same_length(u_model, u_obs, 'u_model and u_obs arrays')
 
         weight = self.mcmc_version.weights[bprop]
         inv_sigma2 = 1 / (u_model ** 2 + u_obs ** 2)
