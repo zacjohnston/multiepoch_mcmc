@@ -32,6 +32,8 @@ def run_sampler(sampler,
     """Runs MCMC sampler for given number of steps
 
     Returns: State
+        sampler state at final step
+        Not actually needed; full data is held in sampler object
 
     Parameters
     ----------
@@ -69,11 +71,11 @@ def run_sampler(sampler,
 
 def seed_walker_positions(x0,
                           n_walkers,
-                          mag=1e-3):
+                          sigma_frac=1e-3):
     """Generates initial MCMC walker positions
 
-    Walkers are randomly distributed in a "ball"
-    around a chosen starting point coordinate `x0`
+    Walker positions are randomly distributed within a Gaussian n-ball,
+    centred on a given initial guess `x0`
 
     Returns: [n_walkers, len(x0)]
 
@@ -83,14 +85,14 @@ def seed_walker_positions(x0,
         coordinates of initial guess, matching length and ordering of `params`
     n_walkers: int
         number of mcmc walkers to use
-    mag: flt
-        fractional size of ball
+    sigma_frac: flt
+        fractional standard deviation of Gaussian n-ball
     """
     n_dim = len(x0)
     pos = []
 
     for _ in range(n_walkers):
-        factor = 1 + mag * np.random.randn(n_dim)
+        factor = 1 + sigma_frac * np.random.randn(n_dim)
         pos += [x0 * factor]
 
     return np.array(pos)
