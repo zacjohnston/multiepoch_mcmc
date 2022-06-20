@@ -1,4 +1,30 @@
 import numpy as np
+import emcee
+
+
+def setup_sampler(burstfit,
+                  pos,
+                  n_threads=1):
+    """Initializes MCMC sampler object
+
+    Returns: EnsembleSampler
+
+    Parameters
+    ----------
+    burstfit : BurstFit
+    pos : [n_walkers, n_dim]
+    n_threads : int
+        number of compute threads to use
+    """
+    n_walkers = len(pos)
+    n_dim = len(pos[0])
+
+    sampler = emcee.EnsembleSampler(nwalkers=n_walkers,
+                                    ndim=n_dim,
+                                    log_prob_fn=burstfit.lhood,
+                                    threads=n_threads)
+
+    return sampler
 
 
 def seed_walker_positions(x0,
@@ -14,7 +40,7 @@ def seed_walker_positions(x0,
     Parameters
     ----------
     x0: [flt]
-        initial guess coordinates, matching length and ordering of `params`
+        coordinates of initial guess, matching length and ordering of `params`
     n_walkers: int
         number of mcmc walkers to use
     mag: flt
