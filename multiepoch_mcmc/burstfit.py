@@ -24,7 +24,6 @@ class BurstFit:
 
     def __init__(self,
                  source,
-                 re_interp=False,
                  u_fper_frac=0.0,
                  u_fedd_frac=0.0,
                  zero_lhood=-np.inf,
@@ -44,17 +43,13 @@ class BurstFit:
         self.n_bprops = len(self.mcmc_version.bprops)
         self.n_analytic_bprops = len(self.mcmc_version.analytic_bprops)
         self.n_interp_params = len(self.mcmc_version.interp_keys)
-        self.has_xedd_ratio = ('xedd_ratio' in self.mcmc_version.param_keys)
-        self.constants = self.mcmc_version.constants
 
         self.kpc_to_cm = u.kpc.to(u.cm)
         self.zero_lhood = zero_lhood
         self.u_fper_frac = u_fper_frac
         self.u_fedd_frac = u_fedd_frac
 
-        self.kemulator = interpolator.Kemulator(source=source,
-                                                version=self.mcmc_version.interpolator,
-                                                re_interp=re_interp)
+        self.kemulator = interpolator.Kemulator()
         self.obs = None
         self.n_epochs = None
         self.obs_data = None
@@ -79,40 +74,34 @@ class BurstFit:
     def extract_obs_values(self):
         """Unpacks observed burst properties (dt, fper, etc.) from data
         """
-        if self.mcmc_version.synthetic:
-            self.obs_data = synth.extract_obs_data(self.source,
-                                                   self.mcmc_version.synth_version,
-                                                   group=self.mcmc_version.synth_group)
-            self.n_epochs = len(self.obs_data['fluence'])
-        else:
-            filename = f'{self.source_obs}.dat'
-            filepath = os.path.join(PYBURST_PATH, 'files', 'obs_data',
-                                    self.source_obs, filename)
+        filename = f'{self.source_obs}.dat'
+        filepath = os.path.join(PYBURST_PATH, 'files', 'obs_data',
+                                self.source_obs, filename)
 
-            self.obs = pd.read_csv(filepath, delim_whitespace=True)
-            self.obs.set_index('epoch', inplace=True, verify_integrity=True)
+        self.obs = pd.read_csv(filepath, delim_whitespace=True)
+        self.obs.set_index('epoch', inplace=True, verify_integrity=True)
 
-            # Select single epoch (if applicable)
-            if self.mcmc_version.epoch is not None:
-                # TODO: define/specify epochs for all mcmc versions?
-                try:
-                    self.obs = self.obs.loc[[self.mcmc_version.epoch]]
-                except KeyError:
-                    raise KeyError(f'epoch [{self.mcmc_version.epoch}] '
-                                   f'not in obs_data table')
+        # Select single epoch (if applicable)
+        if self.mcmc_version.epoch is not None:
+            # TODO: define/specify epochs for all mcmc versions?
+            try:
+                self.obs = self.obs.loc[[self.mcmc_version.epoch]]
+            except KeyError:
+                raise KeyError(f'epoch [{self.mcmc_version.epoch}] '
+                               f'not in obs_data table')
 
-            self.n_epochs = len(self.obs)
-            self.obs_data = self.obs.to_dict(orient='list')
+        self.n_epochs = len(self.obs)
+        self.obs_data = self.obs.to_dict(orient='list')
 
-            for key, item in self.obs_data.items():
-                self.obs_data[key] = np.array(item)
+        for key, item in self.obs_data.items():
+            self.obs_data[key] = np.array(item)
 
-            # ===== Apply bolometric corrections (cbol) to fper ======
-            u_fper_frac = np.sqrt((self.obs_data['u_cbol'] / self.obs_data['cbol']) ** 2
-                                  + (self.obs_data['u_fper'] / self.obs_data['fper']) ** 2)
+        # ===== Apply bolometric corrections (cbol) to fper ======
+        u_fper_frac = np.sqrt((self.obs_data['u_cbol'] / self.obs_data['cbol']) ** 2
+                              + (self.obs_data['u_fper'] / self.obs_data['fper']) ** 2)
 
-            self.obs_data['fper'] *= self.obs_data['cbol']
-            self.obs_data['u_fper'] = self.obs_data['fper'] * u_fper_frac
+        self.obs_data['fper'] *= self.obs_data['cbol']
+        self.obs_data['u_fper'] = self.obs_data['fper'] * u_fper_frac
 
     def lhood(self, x, plot=False):
         """Return lhood for given params
@@ -182,9 +171,6 @@ class BurstFit:
         for i, key in enumerate(keys):
             params_dict[key] = x[i]
 
-        for key, val in self.constants.items():
-            params_dict[key] = val
-
         return params_dict
 
     def get_model_local(self, params):
@@ -206,9 +192,7 @@ class BurstFit:
             """
             out = np.full([self.n_epochs, 2], np.nan, dtype=float)
 
-            if self.has_xedd_ratio:
-                x_edd = params['x'] * params['xedd_ratio']
-            elif self.mcmc_version.x_edd_option == 'x_0':
+            if self.mcmc_version.x_edd_option == 'x_0':
                 x_edd = params['x']
             else:
                 x_edd = self.mcmc_version.x_edd_option
@@ -390,8 +374,7 @@ class BurstFit:
 
         prior_lhood = 0.0
         for key, val in params.items():
-            if key not in self.constants:
-                prior_lhood += np.log(self.priors[key](val))
+            prior_lhood += np.log(self.priors[key](val))
 
         return prior_lhood
 
