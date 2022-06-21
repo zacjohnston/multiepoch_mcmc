@@ -241,21 +241,21 @@ class BurstFit:
         x_dict : {param: value}
             coordinates as dictionary
         """
-        epoch_params = self._get_epoch_params(x_dict=x_dict)
-        interp_local = self._get_interp_bprops(interp_params=epoch_params)
+        x_epochs = self._get_x_epochs(x_dict=x_dict)
+        interp_local = self._get_interp_bprops(interp_params=x_epochs)
         analytic_local = self._get_analytic_bprops(x_dict=x_dict,
-                                                   epoch_params=epoch_params)
+                                                   x_epochs=x_epochs)
 
         return interp_local, analytic_local
 
-    def _get_analytic_bprops(self, x_dict, epoch_params):
+    def _get_analytic_bprops(self, x_dict, x_epochs):
         """Returns calculated analytic burst properties for given x_dict
 
         Parameters
         ----------
         x_dict : {param: value}
             coordinates as dictionary
-        epoch_params : [n_epochs, n_interp_keys]
+        x_epochs : [n_epochs, n_interp_keys]
         """
         function_map = {'fper': self.get_fper, 'fedd': self._get_fedd}
         analytic = np.full([self._n_epochs, 2*len(self.analytic_bprops)],
@@ -263,11 +263,11 @@ class BurstFit:
                            dtype=float)
 
         for i, bprop in enumerate(self.analytic_bprops):
-            analytic[:, 2*i: 2*(i+1)] = function_map[bprop](x_dict, epoch_params)
+            analytic[:, 2*i: 2*(i+1)] = function_map[bprop](x_dict, x_epochs)
 
         return analytic
 
-    def _get_fedd(self, x_dict, epoch_params):
+    def _get_fedd(self, x_dict, x_epochs):
         """Returns Eddington flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
 
@@ -275,6 +275,7 @@ class BurstFit:
         ----------
         x_dict : {param: value}
             coordinates as dictionary
+        x_epochs : [n_epochs, n_interp_keys]
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
@@ -286,7 +287,7 @@ class BurstFit:
 
         return out
 
-    def get_fper(self, x_dict, epoch_params):
+    def get_fper(self, x_dict, x_epochs):
         """Returns persistent accretion flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
 
@@ -294,13 +295,13 @@ class BurstFit:
         ----------
         x_dict : {param: value}
             coordinates as dictionary
-        epoch_params : [n_epochs, n_interp_keys]
+        x_epochs : [n_epochs, n_interp_keys]
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
         mass_ratio, redshift = self._get_gr_factors(x_dict=x_dict)
 
         phi = (redshift - 1) * self._c.value ** 2 / redshift  # grav potential
-        mdot = epoch_params[:, self.interp_keys.index('mdot')]
+        mdot = x_epochs[:, self.interp_keys.index('mdot')]
         l_per = mdot * self._mdot_edd * phi
 
         out[:, 0] = l_per
@@ -322,25 +323,27 @@ class BurstFit:
 
         return output
 
-    def _get_epoch_params(self, x_dict):
-        """Extracts array of model parameters for each epoch
+    def _get_x_epochs(self, x_dict):
+        """Returns epoch array of coordinates
+
+        Returns: [n_epochs, n_interp_params]
 
         Parameters
         ----------
         x_dict : {param: value}
             coordinates as dictionary
         """
-        epoch_params = np.full((self._n_epochs, len(self.interp_keys)),
+        x_epochs = np.full((self._n_epochs, len(self.interp_keys)),
                                np.nan,
                                dtype=float)
 
         for i in range(self._n_epochs):
             for j, key in enumerate(self.interp_keys):
-                epoch_params[i, j] = self._get_interp_param(key=key,
-                                                            x_dict=x_dict,
-                                                            epoch_idx=i)
+                x_epochs[i, j] = self._get_interp_param(key=key,
+                                                        x_dict=x_dict,
+                                                        epoch_idx=i)
 
-        return epoch_params
+        return x_epochs
 
     def _get_interp_param(self, key, x_dict, epoch_idx):
         """Extracts interp param value from full x_dict
