@@ -54,8 +54,6 @@ class BurstFit:
         self.grid_bounds = grid_bounds
         self.weights = weights
 
-        self.interp_idxs = {}
-
         self.reference_radius = reference_radius
         self.n_bprops = len(self.bprops)
         self.n_analytic_bprops = len(self.analytic_bprops)
@@ -70,7 +68,6 @@ class BurstFit:
         self.obs_table = None
         self.obs_data = None
 
-        self._get_indexes()
         self._unpack_obs_data()
 
         self.priors = priors
@@ -78,19 +75,6 @@ class BurstFit:
     # ===============================================================
     #                      Setup
     # ===============================================================
-    def _get_indexes(self):
-        """Extracts indexes of parameters and burst properties
-
-        Expects params array to be in same order as param_keys
-        """
-        def idx_dict(dict_in):
-            dict_out = {}
-            for i, key in enumerate(dict_in):
-                dict_out[key] = i
-            return dict_out
-
-        self.interp_idxs = idx_dict(self.interp_keys)
-
     def _unpack_obs_data(self):
         """Unpacks observed burst properties (dt, fper, etc.) from data
         """
@@ -227,7 +211,7 @@ class BurstFit:
             mass_ratio, redshift = self.get_gr_factors(params=params)
 
             phi = (redshift - 1) * self.c.value ** 2 / redshift  # gravitational potential
-            mdot = epoch_params[:, self.interp_idxs['mdot']]
+            mdot = epoch_params[:, self.interp_keys.index('mdot')]
             l_per = mdot * self.mdot_edd * phi
 
             out[:, 0] = l_per
