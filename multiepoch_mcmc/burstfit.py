@@ -109,7 +109,7 @@ class BurstFit:
 
         Parameters
         ----------
-        x : 1D array
+        x : 1Darray
             coordinates of sample point (must match length and ordering of `param_keys`)
         """
         x_dict = self._get_x_dict(x=x)
@@ -138,28 +138,29 @@ class BurstFit:
 
         return lhood
 
-    def bprop_sample(self, x, x_dict=None):
-        """Returns the predicted observables for a given sample of parameters
+    def lnprior(self, x, x_dict):
+        """Return log-likelihood of prior
 
-        Effectively performs lhood() without the lhood parts
+        Returns: flt
 
         Parameters
         ----------
-        x : np.array
-            set of parameters, same as input to lhood()
-        x_dict : dict
-            pass param dict directly
+        x : 1Darray
+        x_dict : {param: value}
         """
-        if x_dict is None:
-            x_dict = self._get_x_dict(x=x)
-        interp_local, analytic_local = self._get_model_local(x_dict=x_dict)
+        lower_bounds = self._grid_bounds[:, 0]
+        upper_bounds = self._grid_bounds[:, 1]
 
-        interp_shifted, analytic_shifted = self._get_model_shifted(
-                                                    interp_local=interp_local,
-                                                    analytic_local=analytic_local,
-                                                    x_dict=x_dict)
+        inside_bounds = np.logical_and(x > lower_bounds,
+                                       x < upper_bounds)
+        if False in inside_bounds:
+            raise ZeroLhood
 
-        return np.concatenate([interp_shifted, analytic_shifted], axis=1)
+        prior_lhood = 0.0
+        for key, val in x_dict.items():
+            prior_lhood += np.log(self._priors[key](val))
+
+        return prior_lhood
 
     def compare(self, model, u_model, bprop):
         """Returns log-likelihood of given model values
@@ -186,23 +187,6 @@ class BurstFit:
 
         return lh.sum()
 
-    def lnprior(self, x, x_dict):
-        """Return log-likelihood of prior
-        """
-        lower_bounds = self._grid_bounds[:, 0]
-        upper_bounds = self._grid_bounds[:, 1]
-
-        inside_bounds = np.logical_and(x > lower_bounds,
-                                       x < upper_bounds)
-        if False in inside_bounds:
-            raise ZeroLhood
-
-        prior_lhood = 0.0
-        for key, val in x_dict.items():
-            prior_lhood += np.log(self._priors[key](val))
-
-        return prior_lhood
-
     def _compare_all(self, interp_shifted, analytic_shifted):
         """Compares all bprops against observations and returns total likelihood
         """
@@ -220,12 +204,42 @@ class BurstFit:
 
         return lh
 
+    def bprop_sample(self, x, x_dict=None):
+        """Returns the predicted observables for given coordinates
+
+        Effectively performs lhood() without the lhood parts
+
+        Returns: [n_epochs, bprops]
+
+        Parameters
+        ----------
+        x : 1Darray
+            sample coordinates
+        x_dict : {param: value}
+            coordinates as dictionary
+        """
+        if x_dict is None:
+            x_dict = self._get_x_dict(x=x)
+        interp_local, analytic_local = self._get_model_local(x_dict=x_dict)
+
+        interp_shifted, analytic_shifted = self._get_model_shifted(
+            interp_local=interp_local,
+            analytic_local=analytic_local,
+            x_dict=x_dict)
+
+        return np.concatenate([interp_shifted, analytic_shifted], axis=1)
+
     # ===============================================================
     #                      Burst variables
     # ===============================================================
     def _get_model_local(self, x_dict):
         """Calculates model values for given coordinates
             Returns: interp_local, analytic_local
+
+        Parameters
+        ----------
+        x_dict : {param: value}
+            coordinates as dictionary
         """
         epoch_params = self._get_epoch_params(x_dict=x_dict)
         interp_local = self._get_interp_bprops(interp_params=epoch_params)
@@ -236,6 +250,12 @@ class BurstFit:
 
     def _get_analytic_bprops(self, x_dict, epoch_params):
         """Returns calculated analytic burst properties for given x_dict
+
+        Parameters
+        ----------
+        x_dict : {param: value}
+            coordinates as dictionary
+        epoch_params : [n_epochs, n_interp_keys]
         """
         function_map = {'fper': self.get_fper, 'fedd': self._get_fedd}
         analytic = np.full([self._n_epochs, 2*len(self.analytic_bprops)],
@@ -250,6 +270,11 @@ class BurstFit:
     def _get_fedd(self, x_dict, epoch_params):
         """Returns Eddington flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
+
+        Parameters
+        ----------
+        x_dict : {param: value}
+            coordinates as dictionary
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
@@ -264,6 +289,12 @@ class BurstFit:
     def get_fper(self, x_dict, epoch_params):
         """Returns persistent accretion flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
+
+        Parameters
+        ----------
+        x_dict : {param: value}
+            coordinates as dictionary
+        epoch_params : [n_epochs, n_interp_keys]
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
         mass_ratio, redshift = self._get_gr_factors(x_dict=x_dict)
@@ -293,6 +324,11 @@ class BurstFit:
 
     def _get_epoch_params(self, x_dict):
         """Extracts array of model parameters for each epoch
+
+        Parameters
+        ----------
+        x_dict : {param: value}
+            coordinates as dictionary
         """
         epoch_params = np.full((self._n_epochs, len(self.interp_keys)),
                                np.nan,
@@ -308,6 +344,11 @@ class BurstFit:
 
     def _get_interp_param(self, key, x_dict, epoch_idx):
         """Extracts interp param value from full x_dict
+
+        Parameters
+        ----------
+        x_dict : {param: value}
+            coordinates as dictionary
         """
         key = self._param_aliases.get(key, key)
 
