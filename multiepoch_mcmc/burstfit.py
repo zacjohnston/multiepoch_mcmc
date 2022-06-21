@@ -54,12 +54,9 @@ class BurstFit:
         self.grid_bounds = grid_bounds
         self.weights = weights
 
-        self.param_idxs = {}
         self.interp_idxs = {}
-        self._get_indexes()
 
         self.reference_radius = reference_radius
-
         self.n_bprops = len(self.bprops)
         self.n_analytic_bprops = len(self.analytic_bprops)
         self.n_interp_params = len(self.interp_keys)
@@ -72,6 +69,8 @@ class BurstFit:
         self.interpolator = grid_interpolator
         self.obs_table = None
         self.obs_data = None
+
+        self._get_indexes()
         self._unpack_obs_data()
 
         self.priors = priors
@@ -90,7 +89,6 @@ class BurstFit:
                 dict_out[key] = i
             return dict_out
 
-        self.param_idxs = idx_dict(self.param_keys)
         self.interp_idxs = idx_dict(self.interp_keys)
 
     def _unpack_obs_data(self):
