@@ -9,7 +9,7 @@ from multiepoch_mcmc import accretion, gravity
 
 
 class ZeroLhood(Exception):
-    """Escape redundant calculation if likelihood is zero
+    """Escape calculation if likelihood is zero
     """
     pass
 
@@ -175,7 +175,8 @@ class BurstFit:
         """
         epoch_params = self._get_epoch_params(params=params)
         interp_local = self._get_interp_bprops(interp_params=epoch_params)
-        analytic_local = self._get_analytic_bprops(params=params, epoch_params=epoch_params)
+        analytic_local = self._get_analytic_bprops(params=params,
+                                                   epoch_params=epoch_params)
 
         return interp_local, analytic_local
 
@@ -201,7 +202,7 @@ class BurstFit:
             out = np.full([self._n_epochs, 2], np.nan, dtype=float)
             mass_ratio, redshift = self._get_gr_factors(params=params)
 
-            phi = (redshift - 1) * self._c.value ** 2 / redshift  # gravitational potential
+            phi = (redshift - 1) * self._c.value ** 2 / redshift  # grav potential
             mdot = epoch_params[:, self.interp_keys.index('mdot')]
             l_per = mdot * self._mdot_edd * phi
 
@@ -210,7 +211,9 @@ class BurstFit:
             return out
 
         function_map = {'fper': get_fper, 'fedd': get_fedd}
-        analytic = np.full([self._n_epochs, 2*len(self.analytic_bprops)], np.nan, dtype=float)
+        analytic = np.full([self._n_epochs, 2*len(self.analytic_bprops)],
+                           np.nan,
+                           dtype=float)
 
         for i, bprop in enumerate(self.analytic_bprops):
             analytic[:, 2*i: 2*(i+1)] = function_map[bprop]()
@@ -230,7 +233,8 @@ class BurstFit:
             i1 = 2 * (i + 1)
             interp_shifted[:, i0:i1] = self._shift_to_observer(
                                                     values=interp_local[:, i0:i1],
-                                                    bprop=bprop, params=params)
+                                                    bprop=bprop,
+                                                    params=params)
 
         # ==== shift analytic bprops ====
         for i, bprop in enumerate(self.analytic_bprops):
@@ -238,7 +242,8 @@ class BurstFit:
             i1 = 2 * (i + 1)
             analytic_shifted[:, i0:i1] = self._shift_to_observer(
                                                     values=analytic_local[:, i0:i1],
-                                                    bprop=bprop, params=params)
+                                                    bprop=bprop,
+                                                    params=params)
         return interp_shifted, analytic_shifted
 
     def _compare_all(self, interp_shifted, analytic_shifted):
@@ -335,7 +340,9 @@ class BurstFit:
 
         for i in range(self._n_epochs):
             for j, key in enumerate(self.interp_keys):
-                epoch_params[i, j] = self._get_interp_param(key, params, epoch_idx=i)
+                epoch_params[i, j] = self._get_interp_param(key=key,
+                                                            params=params,
+                                                            epoch_idx=i)
 
         return epoch_params
 
@@ -354,12 +361,14 @@ class BurstFit:
         mass_nw = params['m_nw']
         mass_gr = params['m_gr']
         m_ratio = mass_gr / mass_nw
-        _, redshift = gravity.gr_corrections(r=self._ref_radius, m=mass_nw, phi=m_ratio)
+        _, redshift = gravity.gr_corrections(r=self._ref_radius,
+                                             m=mass_nw,
+                                             phi=m_ratio)
 
         return m_ratio, redshift
 
     def lnprior(self, x, params):
-        """Return logarithm prior lhood of params
+        """Return log-likelihood of prior
         """
         lower_bounds = self.grid_bounds[:, 0]
         upper_bounds = self.grid_bounds[:, 1]
