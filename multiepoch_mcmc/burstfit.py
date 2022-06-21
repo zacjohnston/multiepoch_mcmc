@@ -100,7 +100,7 @@ class BurstFit:
             raise KeyError(f'epoch(s) not found in obs_data table')
 
     # ===============================================================
-    #                      Calculation
+    #                      Likelihoods
     # ===============================================================
     def lhood(self, x):
         """Returns log-likelihood for given coordinate
@@ -143,7 +143,7 @@ class BurstFit:
 
         Effectively performs lhood() without the lhood parts
 
-        parameters
+        Parameters
         ----------
         x : np.array
             set of parameters, same as input to lhood()
@@ -161,98 +161,47 @@ class BurstFit:
 
         return np.concatenate([interp_shifted, analytic_shifted], axis=1)
 
-    def _get_x_dict(self, x):
-        """Returns coordinates as dictionary
+    def compare(self, model, u_model, bprop):
+        """Returns log-likelihood of given model values
 
-        Returns: {param: value}
+        Calculates difference between modelled and observed values.
+        All provided arrays must be the same length
 
         Parameters
         ----------
-        x : 1Darray
-            coordinates of sample
+        model : 1darray
+            Model values for particular property
+        u_model : 1darray
+            Corresponding model uncertainties
+        bprop : str
+            burst property being compared
         """
-        x_dict = {}
-        for i, key in enumerate(self.params):
-            x_dict[key] = x[i]
+        obs = self.obs_data[bprop]
+        u_obs = self.obs_data[f'u_{bprop}']
 
-        return x_dict
+        weight = self.weights[bprop]
+        inv_sigma2 = 1 / (u_model ** 2 + u_obs ** 2)
+        lh = -0.5 * weight * ((model - obs) ** 2 * inv_sigma2
+                              + np.log(2 * np.pi / inv_sigma2))
 
-    def _get_model_local(self, x_dict):
-        """Calculates model values for given coordinates
-            Returns: interp_local, analytic_local
+        return lh.sum()
+
+    def lnprior(self, x, x_dict):
+        """Return log-likelihood of prior
         """
-        epoch_params = self._get_epoch_params(x_dict=x_dict)
-        interp_local = self._get_interp_bprops(interp_params=epoch_params)
-        analytic_local = self._get_analytic_bprops(x_dict=x_dict,
-                                                   epoch_params=epoch_params)
+        lower_bounds = self._grid_bounds[:, 0]
+        upper_bounds = self._grid_bounds[:, 1]
 
-        return interp_local, analytic_local
+        inside_bounds = np.logical_and(x > lower_bounds,
+                                       x < upper_bounds)
+        if False in inside_bounds:
+            raise ZeroLhood
 
-    def _get_analytic_bprops(self, x_dict, epoch_params):
-        """Returns calculated analytic burst properties for given x_dict
-        """
-        def get_fedd():
-            """Returns Eddington flux array (n_epochs, 2)
-                Note: Actually the luminosity at this stage, as this is the local value
-            """
-            out = np.full([self._n_epochs, 2], np.nan, dtype=float)
-            x_edd = x_dict['x']
+        prior_lhood = 0.0
+        for key, val in x_dict.items():
+            prior_lhood += np.log(self._priors[key](val))
 
-            l_edd = accretion.edd_lum_newt(mass=x_dict['m_nw'], x=x_edd)
-            out[:, 0] = l_edd
-            out[:, 1] = l_edd * self._u_fedd_frac
-            return out
-
-        def get_fper():
-            """Returns persistent accretion flux array (n_epochs, 2)
-                Note: Actually the luminosity, because this is the local value
-            """
-            out = np.full([self._n_epochs, 2], np.nan, dtype=float)
-            mass_ratio, redshift = self._get_gr_factors(x_dict=x_dict)
-
-            phi = (redshift - 1) * self._c.value ** 2 / redshift  # grav potential
-            mdot = epoch_params[:, self.interp_keys.index('mdot')]
-            l_per = mdot * self._mdot_edd * phi
-
-            out[:, 0] = l_per
-            out[:, 1] = out[:, 0] * self._u_fper_frac
-            return out
-
-        function_map = {'fper': get_fper, 'fedd': get_fedd}
-        analytic = np.full([self._n_epochs, 2*len(self.analytic_bprops)],
-                           np.nan,
-                           dtype=float)
-
-        for i, bprop in enumerate(self.analytic_bprops):
-            analytic[:, 2*i: 2*(i+1)] = function_map[bprop]()
-
-        return analytic
-
-    def _get_model_shifted(self, interp_local, analytic_local, x_dict):
-        """Returns predicted model values (+ uncertainties) shifted to an observer frame
-        """
-        interp_shifted = np.full_like(interp_local, np.nan, dtype=float)
-        analytic_shifted = np.full_like(analytic_local, np.nan, dtype=float)
-
-        # ==== shift interpolated bprops ====
-        # TODO: concatenate bprop arrays and handle together
-        for i, bprop in enumerate(self.interp_bprops):
-            i0 = 2 * i
-            i1 = 2 * (i + 1)
-            interp_shifted[:, i0:i1] = self._shift_to_observer(
-                                                    values=interp_local[:, i0:i1],
-                                                    bprop=bprop,
-                                                    x_dict=x_dict)
-
-        # ==== shift analytic bprops ====
-        for i, bprop in enumerate(self.analytic_bprops):
-            i0 = 2 * i
-            i1 = 2 * (i + 1)
-            analytic_shifted[:, i0:i1] = self._shift_to_observer(
-                                                    values=analytic_local[:, i0:i1],
-                                                    bprop=bprop,
-                                                    x_dict=x_dict)
-        return interp_shifted, analytic_shifted
+        return prior_lhood
 
     def _compare_all(self, interp_shifted, analytic_shifted):
         """Compares all bprops against observations and returns total likelihood
@@ -270,6 +219,131 @@ class BurstFit:
             lh += self.compare(model=model, u_model=u_model, bprop=bprop)
 
         return lh
+
+    # ===============================================================
+    #                      Burst variables
+    # ===============================================================
+    def _get_model_local(self, x_dict):
+        """Calculates model values for given coordinates
+            Returns: interp_local, analytic_local
+        """
+        epoch_params = self._get_epoch_params(x_dict=x_dict)
+        interp_local = self._get_interp_bprops(interp_params=epoch_params)
+        analytic_local = self._get_analytic_bprops(x_dict=x_dict,
+                                                   epoch_params=epoch_params)
+
+        return interp_local, analytic_local
+
+    def _get_analytic_bprops(self, x_dict, epoch_params):
+        """Returns calculated analytic burst properties for given x_dict
+        """
+        function_map = {'fper': self.get_fper, 'fedd': self._get_fedd}
+        analytic = np.full([self._n_epochs, 2*len(self.analytic_bprops)],
+                           np.nan,
+                           dtype=float)
+
+        for i, bprop in enumerate(self.analytic_bprops):
+            analytic[:, 2*i: 2*(i+1)] = function_map[bprop](x_dict, epoch_params)
+
+        return analytic
+
+    def _get_fedd(self, x_dict, epoch_params):
+        """Returns Eddington flux array (n_epochs, 2)
+            Note: Actually luminosity, as this is the local value
+        """
+        out = np.full([self._n_epochs, 2], np.nan, dtype=float)
+
+        l_edd = accretion.edd_lum_newt(mass=x_dict['m_nw'],
+                                       x=x_dict['x'])
+
+        out[:, 0] = l_edd
+        out[:, 1] = l_edd * self._u_fedd_frac
+
+        return out
+
+    def get_fper(self, x_dict, epoch_params):
+        """Returns persistent accretion flux array (n_epochs, 2)
+            Note: Actually luminosity, as this is the local value
+        """
+        out = np.full([self._n_epochs, 2], np.nan, dtype=float)
+        mass_ratio, redshift = self._get_gr_factors(x_dict=x_dict)
+
+        phi = (redshift - 1) * self._c.value ** 2 / redshift  # grav potential
+        mdot = epoch_params[:, self.interp_keys.index('mdot')]
+        l_per = mdot * self._mdot_edd * phi
+
+        out[:, 0] = l_per
+        out[:, 1] = out[:, 0] * self._u_fper_frac
+        return out
+
+    def _get_interp_bprops(self, interp_params):
+        """Interpolates burst properties for N epochs
+
+        Parameters
+        ----------
+        interp_params : 1darray
+            parameters specific to the model (e.g. mdot1, x, z, qb, get_mass)
+        """
+        output = self._grid_interpolator.interpolate(x=interp_params)
+
+        if True in np.isnan(output):
+            raise ZeroLhood
+
+        return output
+
+    def _get_epoch_params(self, x_dict):
+        """Extracts array of model parameters for each epoch
+        """
+        epoch_params = np.full((self._n_epochs, len(self.interp_keys)),
+                               np.nan,
+                               dtype=float)
+
+        for i in range(self._n_epochs):
+            for j, key in enumerate(self.interp_keys):
+                epoch_params[i, j] = self._get_interp_param(key=key,
+                                                            x_dict=x_dict,
+                                                            epoch_idx=i)
+
+        return epoch_params
+
+    def _get_interp_param(self, key, x_dict, epoch_idx):
+        """Extracts interp param value from full x_dict
+        """
+        key = self._param_aliases.get(key, key)
+
+        if key in self.epoch_unique:
+            key = f'{key}{epoch_idx + 1}'
+
+        return x_dict[key]
+
+    # ===============================================================
+    #                      Conversions
+    # ===============================================================
+    def _get_model_shifted(self, interp_local, analytic_local, x_dict):
+        """Returns predicted model values (+ uncertainties) shifted to an observer frame
+        """
+        interp_shifted = np.full_like(interp_local, np.nan, dtype=float)
+        analytic_shifted = np.full_like(analytic_local, np.nan, dtype=float)
+
+        # ==== shift interpolated bprops ====
+        # TODO: concatenate bprop arrays and handle together
+        for i, bprop in enumerate(self.interp_bprops):
+            i0 = 2 * i
+            i1 = 2 * (i + 1)
+            interp_shifted[:, i0:i1] = self._shift_to_observer(
+                values=interp_local[:, i0:i1],
+                bprop=bprop,
+                x_dict=x_dict)
+
+        # ==== shift analytic bprops ====
+        for i, bprop in enumerate(self.analytic_bprops):
+            i0 = 2 * i
+            i1 = 2 * (i + 1)
+            analytic_shifted[:, i0:i1] = self._shift_to_observer(
+                values=analytic_local[:, i0:i1],
+                bprop=bprop,
+                x_dict=x_dict)
+        return interp_shifted, analytic_shifted
 
     def _shift_to_observer(self, values, bprop, x_dict):
         """Returns burst property shifted to observer frame/units
@@ -323,46 +397,6 @@ class BurstFit:
 
         return shifted
 
-    def _get_interp_bprops(self, interp_params):
-        """Interpolates burst properties for N epochs
-
-        Parameters
-        ----------
-        interp_params : 1darray
-            parameters specific to the model (e.g. mdot1, x, z, qb, get_mass)
-        """
-        output = self._grid_interpolator.interpolate(x=interp_params)
-
-        if True in np.isnan(output):
-            raise ZeroLhood
-
-        return output
-
-    def _get_epoch_params(self, x_dict):
-        """Extracts array of model parameters for each epoch
-        """
-        epoch_params = np.full((self._n_epochs, len(self.interp_keys)),
-                               np.nan,
-                               dtype=float)
-
-        for i in range(self._n_epochs):
-            for j, key in enumerate(self.interp_keys):
-                epoch_params[i, j] = self._get_interp_param(key=key,
-                                                            x_dict=x_dict,
-                                                            epoch_idx=i)
-
-        return epoch_params
-
-    def _get_interp_param(self, key, x_dict, epoch_idx):
-        """Extracts interp param value from full x_dict
-        """
-        key = self._param_aliases.get(key, key)
-
-        if key in self.epoch_unique:
-            key = f'{key}{epoch_idx + 1}'
-
-        return x_dict[key]
-
     def _get_gr_factors(self, x_dict):
         """Returns GR factors (m_ratio, redshift) given (m_nw, m_gr)"""
         mass_nw = x_dict['m_nw']
@@ -374,44 +408,21 @@ class BurstFit:
 
         return m_ratio, redshift
 
-    def lnprior(self, x, x_dict):
-        """Return log-likelihood of prior
-        """
-        lower_bounds = self._grid_bounds[:, 0]
-        upper_bounds = self._grid_bounds[:, 1]
+    # ===============================================================
+    #                      Misc.
+    # ===============================================================
+    def _get_x_dict(self, x):
+        """Returns sample coordinates as dictionary
 
-        inside_bounds = np.logical_and(x > lower_bounds,
-                                       x < upper_bounds)
-        if False in inside_bounds:
-            raise ZeroLhood
-
-        prior_lhood = 0.0
-        for key, val in x_dict.items():
-            prior_lhood += np.log(self._priors[key](val))
-
-        return prior_lhood
-
-    def compare(self, model, u_model, bprop):
-        """Returns log-likelihood of given model values
-
-        Calculates difference between modelled and observed values.
-        All provided arrays must be the same length
+        Returns: {param: value}
 
         Parameters
         ----------
-        model : 1darray
-            Model values for particular property
-        u_model : 1darray
-            Corresponding model uncertainties
-        bprop : str
-            burst property being compared
+        x : 1Darray
+            coordinates of sample
         """
-        obs = self.obs_data[bprop]
-        u_obs = self.obs_data[f'u_{bprop}']
+        x_dict = {}
+        for i, key in enumerate(self.params):
+            x_dict[key] = x[i]
 
-        weight = self.weights[bprop]
-        inv_sigma2 = 1 / (u_model ** 2 + u_obs ** 2)
-        lh = -0.5 * weight * ((model - obs) ** 2 * inv_sigma2
-                              + np.log(2 * np.pi / inv_sigma2))
-
-        return lh.sum()
+        return x_dict
