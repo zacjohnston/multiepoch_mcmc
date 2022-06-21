@@ -30,7 +30,7 @@ class BurstFit:
                  analytic_bprops=('fper', 'fedd'),
                  interp_bprops=('rate', 'fluence', 'peak'),
                  interp_keys=('mdot', 'x', 'z', 'qb', 'mass'),
-                 param_keys=('mdot1', 'mdot2', 'mdot3', 'x', 'z', 'qb1', 'qb2', 'qb3', 'm_nw', 'm_gr', 'd_b', 'xi_ratio'),
+                 params=('mdot1', 'mdot2', 'mdot3', 'x', 'z', 'qb1', 'qb2', 'qb3', 'm_nw', 'm_gr', 'd_b', 'xi_ratio'),
                  epoch_unique=('mdot', 'qb'),
                  system='gs1826',
                  epochs=(1998, 2000, 2007),
@@ -42,7 +42,7 @@ class BurstFit:
         self.epochs = epochs
         self._n_epochs = len(self.epochs)
 
-        self.param_keys = param_keys
+        self.params = params
         self.interp_keys = interp_keys
         self.epoch_unique = epoch_unique
         self._param_aliases = {'mass': 'm_nw'}
@@ -172,7 +172,7 @@ class BurstFit:
             coordinates of sample
         """
         x_dict = {}
-        for i, key in enumerate(self.param_keys):
+        for i, key in enumerate(self.params):
             x_dict[key] = x[i]
 
         return x_dict
