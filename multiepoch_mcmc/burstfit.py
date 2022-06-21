@@ -54,11 +54,8 @@ class BurstFit:
         self.grid_bounds = grid_bounds
         self.weights = weights
 
-        self.reference_radius = reference_radius
-        self.n_bprops = len(self.bprops)
-        self.n_analytic_bprops = len(self.analytic_bprops)
-        self.n_interp_params = len(self.interp_keys)
 
+        self.reference_radius = reference_radius
         self.kpc_to_cm = u.kpc.to(u.cm)
         self.zero_lhood = zero_lhood
         self.u_fper_frac = u_fper_frac
@@ -170,10 +167,8 @@ class BurstFit:
     def get_params_dict(self, x):
         """Returns params in form of dict
         """
-        keys = self.param_keys
-        params_dict = dict.fromkeys(keys)
-
-        for i, key in enumerate(keys):
+        params_dict = {}
+        for i, key in enumerate(self.param_keys):
             params_dict[key] = x[i]
 
         return params_dict
@@ -219,7 +214,7 @@ class BurstFit:
             return out
 
         function_map = {'fper': get_fper, 'fedd': get_fedd}
-        analytic = np.full([self.n_epochs, 2*self.n_analytic_bprops], np.nan, dtype=float)
+        analytic = np.full([self.n_epochs, 2*len(self.analytic_bprops)], np.nan, dtype=float)
 
         for i, bprop in enumerate(self.analytic_bprops):
             analytic[:, 2*i: 2*(i+1)] = function_map[bprop]()
@@ -336,7 +331,9 @@ class BurstFit:
     def get_epoch_params(self, params):
         """Extracts array of model parameters for each epoch
         """
-        epoch_params = np.full((self.n_epochs, self.n_interp_params), np.nan, dtype=float)
+        epoch_params = np.full((self.n_epochs, len(self.interp_keys)),
+                               np.nan,
+                               dtype=float)
 
         for i in range(self.n_epochs):
             for j, key in enumerate(self.interp_keys):
