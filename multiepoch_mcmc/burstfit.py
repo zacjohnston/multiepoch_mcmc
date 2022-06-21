@@ -127,13 +127,12 @@ class BurstFit:
             return self._zero_lhood
 
         # ===== Shift all burst properties to observable quantities =====
-        interp_shifted, analytic_shifted = self._get_model_shifted(
-                                                    interp_local=interp_local,
-                                                    analytic_local=analytic_local,
-                                                    x_dict=x_dict)
+        y_shifted = self._get_y_shifted(interp_local=interp_local,
+                                        analytic_local=analytic_local,
+                                        x_dict=x_dict)
 
         # ===== Evaluate likelihoods against observed data =====
-        lh = self._compare_all(interp_shifted, analytic_shifted)
+        lh = self._compare_all(y_shifted)
         lhood = lp + lh
 
         return lhood
@@ -182,23 +181,23 @@ class BurstFit:
 
         weight = self.weights[bprop]
         inv_sigma2 = 1 / (u_model ** 2 + u_obs ** 2)
+
         lh = -0.5 * weight * ((model - obs) ** 2 * inv_sigma2
                               + np.log(2 * np.pi / inv_sigma2))
 
         return lh.sum()
 
-    def _compare_all(self, interp_shifted, analytic_shifted):
+    def _compare_all(self, y_shifted):
         """Compares all bprops against observations and returns total likelihood
         """
         lh = 0.0
-        all_shifted = np.concatenate([interp_shifted, analytic_shifted], axis=1)
 
         for i, bprop in enumerate(self.bprops):
             bprop_idx = 2 * i
             u_bprop_idx = bprop_idx + 1
 
-            model = all_shifted[:, bprop_idx]
-            u_model = all_shifted[:, u_bprop_idx]
+            model = y_shifted[:, bprop_idx]
+            u_model = y_shifted[:, u_bprop_idx]
 
             lh += self.compare(model=model, u_model=u_model, bprop=bprop)
 
@@ -222,12 +221,11 @@ class BurstFit:
             x_dict = self._get_x_dict(x=x)
         interp_local, analytic_local = self._get_model_local(x_dict=x_dict)
 
-        interp_shifted, analytic_shifted = self._get_model_shifted(
-            interp_local=interp_local,
-            analytic_local=analytic_local,
-            x_dict=x_dict)
+        y_shifted = self._get_y_shifted(interp_local=interp_local,
+                                        analytic_local=analytic_local,
+                                        x_dict=x_dict)
 
-        return np.concatenate([interp_shifted, analytic_shifted], axis=1)
+        return y_shifted
 
     # ===============================================================
     #                      Burst variables
@@ -363,7 +361,7 @@ class BurstFit:
     # ===============================================================
     #                      Conversions
     # ===============================================================
-    def _get_model_shifted(self, interp_local, analytic_local, x_dict):
+    def _get_y_shifted(self, interp_local, analytic_local, x_dict):
         """Returns predicted model values (+ uncertainties) shifted to an observer frame
         """
         interp_shifted = np.full_like(interp_local, np.nan, dtype=float)
@@ -387,7 +385,10 @@ class BurstFit:
                 values=analytic_local[:, i0:i1],
                 bprop=bprop,
                 x_dict=x_dict)
-        return interp_shifted, analytic_shifted
+
+        y_shifted = np.concatenate([interp_shifted, analytic_shifted], axis=1)
+
+        return y_shifted
 
     def _shift_to_observer(self, values, bprop, x_dict):
         """Returns burst property shifted to observer frame/units
