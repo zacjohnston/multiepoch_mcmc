@@ -20,6 +20,7 @@ class BurstFit:
     c = const.c.to(u.cm / u.s)                             # speed of light
     mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
     z_sun = 0.01                                           # solar CNO metallicity
+    ref_radius = 10
 
     def __init__(self,
                  grid_interpolator,
@@ -36,14 +37,12 @@ class BurstFit:
                  epochs=(1998, 2000, 2007),
                  u_fper_frac=0.0,
                  u_fedd_frac=0.0,
-                 zero_lhood=-np.inf,
-                 reference_radius=10):
+                 zero_lhood=-np.inf):
         """"""
         self.system = system
         self.epochs = epochs
         self.n_epochs = len(self.epochs)
 
-        # temp attributes
         self.param_keys = param_keys
         self.interp_keys = interp_keys
         self.analytic_bprops = analytic_bprops
@@ -54,20 +53,16 @@ class BurstFit:
         self.grid_bounds = grid_bounds
         self.weights = weights
 
-
-        self.reference_radius = reference_radius
-        self.kpc_to_cm = u.kpc.to(u.cm)
         self.zero_lhood = zero_lhood
         self.u_fper_frac = u_fper_frac
         self.u_fedd_frac = u_fedd_frac
-
+        self.priors = priors
         self.interpolator = grid_interpolator
+
         self.obs_table = None
         self.obs_data = None
 
         self._unpack_obs_data()
-
-        self.priors = priors
 
     # ===============================================================
     #                      Setup
@@ -280,8 +275,10 @@ class BurstFit:
         In special case bprop='fper', 'values' must be local accrate
                 as fraction of Eddington rate.
         """
+        kpc_to_cm = u.kpc.to(u.cm)
         mass_ratio, redshift = self.get_gr_factors(params=params)
-        flux_factor_b = 4 * np.pi * (self.kpc_to_cm * params['d_b']) ** 2
+
+        flux_factor_b = 4 * np.pi * (params['d_b'] * kpc_to_cm) ** 2
         flux_factor_p = flux_factor_b * params['xi_ratio']
 
         flux_factors = {'dt': 1,
@@ -356,7 +353,8 @@ class BurstFit:
         mass_nw = params['m_nw']
         mass_gr = params['m_gr']
         m_ratio = mass_gr / mass_nw
-        redshift = gravity.gr_corrections(r=self.reference_radius, m=mass_nw, phi=m_ratio)[1]
+        _, redshift = gravity.gr_corrections(r=self.ref_radius, m=mass_nw, phi=m_ratio)
+
         return m_ratio, redshift
 
     def lnprior(self, x, params):
