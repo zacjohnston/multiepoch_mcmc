@@ -19,7 +19,7 @@ class BurstFit:
     """
     _c = const.c.to(u.cm / u.s)                             # speed of light
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
-    _ref_radius = 10
+    _ref_radius = 10                                        # reference NS raius [km]
 
     def __init__(self,
                  grid_interpolator,
@@ -67,7 +67,7 @@ class BurstFit:
     #                      Setup
     # ===============================================================
     def _unpack_obs_data(self):
-        """Unpacks observed burst properties (dt, fper, etc.) from data
+        """Unpacks observed burst data from table
         """
         self._load_obs_table()
         self.obs_data = self._obs_table.to_dict(orient='list')
@@ -83,7 +83,7 @@ class BurstFit:
         self.obs_data['u_fper'] = self.obs_data['fper'] * u_fper_frac
 
     def _load_obs_table(self):
-        """Loads observation data from file
+        """Loads observed burst data from file
         """
         path = os.path.dirname(__file__)
         filename = f'{self.system}.dat'
@@ -109,7 +109,7 @@ class BurstFit:
         Parameters
         ----------
         x : 1D array
-            set of parameter values to try (must match order of mcmc_version.param_keys)
+            coordinates of sample point (must match length and ordering of `param_keys`)
         """
         params = self._get_params_dict(x=x)
 
