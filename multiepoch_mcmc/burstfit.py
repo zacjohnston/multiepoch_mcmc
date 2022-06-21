@@ -17,10 +17,9 @@ class ZeroLhood(Exception):
 class BurstFit:
     """Class for comparing modelled bursts to observed bursts
     """
-    c = const.c.to(u.cm / u.s)                             # speed of light
-    mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
-    z_sun = 0.01                                           # solar CNO metallicity
-    ref_radius = 10
+    _c = const.c.to(u.cm / u.s)                             # speed of light
+    _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
+    _ref_radius = 10
 
     def __init__(self,
                  grid_interpolator,
@@ -41,7 +40,7 @@ class BurstFit:
         """"""
         self.system = system
         self.epochs = epochs
-        self.n_epochs = len(self.epochs)
+        self._n_epochs = len(self.epochs)
 
         self.param_keys = param_keys
         self.interp_keys = interp_keys
@@ -53,13 +52,13 @@ class BurstFit:
         self.grid_bounds = grid_bounds
         self.weights = weights
 
-        self.zero_lhood = zero_lhood
-        self.u_fper_frac = u_fper_frac
-        self.u_fedd_frac = u_fedd_frac
-        self.priors = priors
-        self.interpolator = grid_interpolator
+        self._zero_lhood = zero_lhood
+        self._u_fper_frac = u_fper_frac
+        self._u_fedd_frac = u_fedd_frac
+        self._priors = priors
+        self._grid_interpolator = grid_interpolator
 
-        self.obs_table = None
+        self._obs_table = None
         self.obs_data = None
 
         self._unpack_obs_data()
@@ -71,7 +70,7 @@ class BurstFit:
         """Unpacks observed burst properties (dt, fper, etc.) from data
         """
         self._load_obs_table()
-        self.obs_data = self.obs_table.to_dict(orient='list')
+        self.obs_data = self._obs_table.to_dict(orient='list')
 
         for key, item in self.obs_data.items():
             self.obs_data[key] = np.array(item)
@@ -91,11 +90,11 @@ class BurstFit:
         filepath = os.path.join(path, '..', 'data', 'obs', self.system, filename)
 
         print(f'Loading obs table: {os.path.abspath(filepath)}')
-        self.obs_table = pd.read_csv(filepath, delim_whitespace=True)
-        self.obs_table.set_index('epoch', inplace=True, verify_integrity=True)
+        self._obs_table = pd.read_csv(filepath, delim_whitespace=True)
+        self._obs_table.set_index('epoch', inplace=True, verify_integrity=True)
 
         try:
-            self.obs_table = self.obs_table.loc[list(self.epochs)]
+            self._obs_table = self._obs_table.loc[list(self.epochs)]
         except KeyError:
             raise KeyError(f'epoch(s) not found in obs_data table')
 
@@ -103,26 +102,28 @@ class BurstFit:
     #                      Calculation
     # ===============================================================
     def lhood(self, x):
-        """Return lhood for given params
+        """Returns likelihood for given coordinate
+
+        Returns: flt
 
         Parameters
         ----------
         x : 1D array
             set of parameter values to try (must match order of mcmc_version.param_keys)
         """
-        params = self.get_params_dict(x=x)
+        params = self._get_params_dict(x=x)
 
         # ===== check priors =====
         try:
             lp = self.lnprior(x=x, params=params)
         except ZeroLhood:
-            return self.zero_lhood
+            return self._zero_lhood
 
         # ===== Interpolate and calculate local model burst properties =====
         try:
             interp_local, analytic_local = self.get_model_local(params=params)
         except ZeroLhood:
-            return self.zero_lhood
+            return self._zero_lhood
 
         # ===== Shift all burst properties to observable quantities =====
         interp_shifted, analytic_shifted = self.get_model_shifted(
@@ -149,7 +150,7 @@ class BurstFit:
             pass param dict directly
         """
         if params is None:
-            params = self.get_params_dict(x=x)
+            params = self._get_params_dict(x=x)
         interp_local, analytic_local = self.get_model_local(params=params)
 
         interp_shifted, analytic_shifted = self.get_model_shifted(
@@ -159,7 +160,7 @@ class BurstFit:
 
         return np.concatenate([interp_shifted, analytic_shifted], axis=1)
 
-    def get_params_dict(self, x):
+    def _get_params_dict(self, x):
         """Returns params in form of dict
         """
         params_dict = {}
@@ -185,31 +186,31 @@ class BurstFit:
             """Returns Eddington flux array (n_epochs, 2)
                 Note: Actually the luminosity at this stage, as this is the local value
             """
-            out = np.full([self.n_epochs, 2], np.nan, dtype=float)
+            out = np.full([self._n_epochs, 2], np.nan, dtype=float)
             x_edd = params['x']
 
             l_edd = accretion.edd_lum_newt(mass=params['m_nw'], x=x_edd)
             out[:, 0] = l_edd
-            out[:, 1] = l_edd * self.u_fedd_frac
+            out[:, 1] = l_edd * self._u_fedd_frac
             return out
 
         def get_fper():
             """Returns persistent accretion flux array (n_epochs, 2)
                 Note: Actually the luminosity, because this is the local value
             """
-            out = np.full([self.n_epochs, 2], np.nan, dtype=float)
+            out = np.full([self._n_epochs, 2], np.nan, dtype=float)
             mass_ratio, redshift = self.get_gr_factors(params=params)
 
-            phi = (redshift - 1) * self.c.value ** 2 / redshift  # gravitational potential
+            phi = (redshift - 1) * self._c.value ** 2 / redshift  # gravitational potential
             mdot = epoch_params[:, self.interp_keys.index('mdot')]
-            l_per = mdot * self.mdot_edd * phi
+            l_per = mdot * self._mdot_edd * phi
 
             out[:, 0] = l_per
-            out[:, 1] = out[:, 0] * self.u_fper_frac
+            out[:, 1] = out[:, 0] * self._u_fper_frac
             return out
 
         function_map = {'fper': get_fper, 'fedd': get_fedd}
-        analytic = np.full([self.n_epochs, 2*len(self.analytic_bprops)], np.nan, dtype=float)
+        analytic = np.full([self._n_epochs, 2*len(self.analytic_bprops)], np.nan, dtype=float)
 
         for i, bprop in enumerate(self.analytic_bprops):
             analytic[:, 2*i: 2*(i+1)] = function_map[bprop]()
@@ -262,7 +263,7 @@ class BurstFit:
 
         Parameters
         ----------
-        values : ndarray|flt
+        values : flt or ndarray
             model frame value(s)
         bprop : str
             name of burst property being converted/calculated
@@ -318,7 +319,7 @@ class BurstFit:
         interp_params : 1darray
             parameters specific to the model (e.g. mdot1, x, z, qb, get_mass)
         """
-        output = self.interpolator.interpolate(x=interp_params)
+        output = self._grid_interpolator.interpolate(x=interp_params)
 
         if True in np.isnan(output):
             raise ZeroLhood
@@ -328,11 +329,11 @@ class BurstFit:
     def get_epoch_params(self, params):
         """Extracts array of model parameters for each epoch
         """
-        epoch_params = np.full((self.n_epochs, len(self.interp_keys)),
+        epoch_params = np.full((self._n_epochs, len(self.interp_keys)),
                                np.nan,
                                dtype=float)
 
-        for i in range(self.n_epochs):
+        for i in range(self._n_epochs):
             for j, key in enumerate(self.interp_keys):
                 epoch_params[i, j] = self.get_interp_param(key, params, epoch_idx=i)
 
@@ -353,7 +354,7 @@ class BurstFit:
         mass_nw = params['m_nw']
         mass_gr = params['m_gr']
         m_ratio = mass_gr / mass_nw
-        _, redshift = gravity.gr_corrections(r=self.ref_radius, m=mass_nw, phi=m_ratio)
+        _, redshift = gravity.gr_corrections(r=self._ref_radius, m=mass_nw, phi=m_ratio)
 
         return m_ratio, redshift
 
@@ -370,12 +371,12 @@ class BurstFit:
 
         prior_lhood = 0.0
         for key, val in params.items():
-            prior_lhood += np.log(self.priors[key](val))
+            prior_lhood += np.log(self._priors[key](val))
 
         return prior_lhood
 
     def compare(self, model, u_model, bprop):
-        """Returns logarithmic likelihood of given model values
+        """Returns log-likelihood of given model values
 
         Calculates difference between modelled and observed values.
         All provided arrays must be the same length
