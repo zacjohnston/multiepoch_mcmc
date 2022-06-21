@@ -56,7 +56,7 @@ class BurstFit:
 
         self.param_idxs = {}
         self.interp_idxs = {}
-        self.get_indexes()
+        self._get_indexes()
 
         self.reference_radius = reference_radius
 
@@ -72,11 +72,14 @@ class BurstFit:
         self.interpolator = grid_interpolator
         self.obs_table = None
         self.obs_data = None
-        self.extract_obs_values()
+        self._unpack_obs_data()
 
         self.priors = priors
 
-    def get_indexes(self):
+    # ===============================================================
+    #                      Setup
+    # ===============================================================
+    def _get_indexes(self):
         """Extracts indexes of parameters and burst properties
 
         Expects params array to be in same order as param_keys
@@ -90,23 +93,10 @@ class BurstFit:
         self.param_idxs = idx_dict(self.param_keys)
         self.interp_idxs = idx_dict(self.interp_keys)
 
-    def extract_obs_values(self):
+    def _unpack_obs_data(self):
         """Unpacks observed burst properties (dt, fper, etc.) from data
         """
-        path = os.path.dirname(__file__)
-
-        filename = f'{self.system}.dat'
-        filepath = os.path.join(path, '..', 'data', 'obs', self.system, filename)
-
-        print(f'Loading obs table: {os.path.abspath(filepath)}')
-        self.obs_table = pd.read_csv(filepath, delim_whitespace=True)
-        self.obs_table.set_index('epoch', inplace=True, verify_integrity=True)
-
-        try:
-            self.obs_table = self.obs_table.loc[list(self.epochs)]
-        except KeyError:
-            raise KeyError(f'epoch(s) not found in obs_data table')
-
+        self._load_obs_table()
         self.obs_data = self.obs_table.to_dict(orient='list')
 
         for key, item in self.obs_data.items():
@@ -119,6 +109,25 @@ class BurstFit:
         self.obs_data['fper'] *= self.obs_data['cbol']
         self.obs_data['u_fper'] = self.obs_data['fper'] * u_fper_frac
 
+    def _load_obs_table(self):
+        """Loads observation data from file
+        """
+        path = os.path.dirname(__file__)
+        filename = f'{self.system}.dat'
+        filepath = os.path.join(path, '..', 'data', 'obs', self.system, filename)
+
+        print(f'Loading obs table: {os.path.abspath(filepath)}')
+        self.obs_table = pd.read_csv(filepath, delim_whitespace=True)
+        self.obs_table.set_index('epoch', inplace=True, verify_integrity=True)
+
+        try:
+            self.obs_table = self.obs_table.loc[list(self.epochs)]
+        except KeyError:
+            raise KeyError(f'epoch(s) not found in obs_data table')
+
+    # ===============================================================
+    #                      Calculation
+    # ===============================================================
     def lhood(self, x):
         """Return lhood for given params
 
