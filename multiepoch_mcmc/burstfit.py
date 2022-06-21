@@ -44,7 +44,7 @@ class BurstFit:
         """
         self.system = system
         self.epochs = epochs
-        self.n_epochs = len(self.obs_data)
+        self.n_epochs = len(self.epochs)
 
         # temp attributes
         self.param_keys = param_keys
@@ -99,18 +99,18 @@ class BurstFit:
         path = os.path.dirname(__file__)
 
         filename = f'{self.system}.dat'
-        filepath = os.path.join(path, '..', 'data', self.system, filename)
+        filepath = os.path.join(path, '..', 'data', 'obs', self.system, filename)
 
         print(f'Loading obs table: {os.path.abspath(filepath)}')
         self.obs_table = pd.read_csv(filepath, delim_whitespace=True)
         self.obs_table.set_index('epoch', inplace=True, verify_integrity=True)
 
         try:
-            self.obs_table = self.obs_table.loc[[self.epochs]]
+            self.obs_table = self.obs_table.loc[list(self.epochs)]
         except KeyError:
             raise KeyError(f'epoch(s) not found in obs_data table')
 
-        self.obs_data = self.obs_data.to_dict(orient='list')
+        self.obs_data = self.obs_table.to_dict(orient='list')
 
         for key, item in self.obs_data.items():
             self.obs_data[key] = np.array(item)
@@ -338,7 +338,7 @@ class BurstFit:
         interp_params : 1darray
             parameters specific to the model (e.g. mdot1, x, z, qb, get_mass)
         """
-        output = self.interpolator.interpolate(params=interp_params)
+        output = self.interpolator.interpolate(x=interp_params)
 
         if True in np.isnan(output):
             raise ZeroLhood
