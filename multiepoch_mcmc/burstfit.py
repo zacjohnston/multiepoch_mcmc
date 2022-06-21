@@ -38,10 +38,7 @@ class BurstFit:
                  u_fedd_frac=0.0,
                  zero_lhood=-np.inf,
                  reference_radius=10):
-        """
-        reference_radius : float
-            Newtonian get_radius (km) used in Kepler
-        """
+        """"""
         self.system = system
         self.epochs = epochs
         self.n_epochs = len(self.epochs)
@@ -210,7 +207,7 @@ class BurstFit:
             out = np.full([self.n_epochs, 2], np.nan, dtype=float)
             x_edd = params['x']
 
-            l_edd = accretion.eddington_lum_newtonian(mass=params['m_nw'], x=x_edd)
+            l_edd = accretion.edd_lum_newt(mass=params['m_nw'], x=x_edd)
             out[:, 0] = l_edd
             out[:, 1] = l_edd * self.u_fedd_frac
             return out
