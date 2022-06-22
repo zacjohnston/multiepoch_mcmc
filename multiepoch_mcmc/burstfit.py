@@ -24,36 +24,28 @@ class BurstFit:
 
     def __init__(self,
                  system='gs1826',
-                 bprops=('rate', 'fluence', 'peak', 'fper', 'fedd'),
-                 analytic_bprops=('fper', 'fedd'),
-                 interp_bprops=('rate', 'fluence', 'peak'),
-                 interp_keys=('mdot', 'x', 'z', 'qb', 'mass'),
-                 epoch_unique=('mdot', 'qb'),
-                 epochs=(1998, 2000, 2007),
-                 u_fper_frac=0.0,
-                 u_fedd_frac=0.0,
                  zero_lhood=-np.inf):
         """"""
         self.system = system
         self.config = config.load_config(system=self.system)
 
-        self.epochs = epochs
+        self.epochs = self.config['obs']['epochs']
         self._n_epochs = len(self.epochs)
 
         self.params = self.config['keys']['params']
-        self.interp_keys = interp_keys
-        self.epoch_unique = epoch_unique
+        self.interp_keys = self.config['keys']['interp_keys']
+        self.epoch_unique = self.config['keys']['epoch_unique']
         self._param_aliases = {'mass': 'm_nw'}
         
-        self.bprops = bprops
-        self.interp_bprops = interp_bprops
-        self.analytic_bprops = analytic_bprops
+        self.bprops = self.config['keys']['bprops']
+        self.interp_bprops = self.config['keys']['interp_bprops']
+        self.analytic_bprops = self.config['keys']['analytic_bprops']
         
         self._grid_bounds = self.config['grid']['bounds']
         self.weights = self.config['lhood']['weights']
         self._zero_lhood = zero_lhood
-        self._u_fper_frac = u_fper_frac
-        self._u_fedd_frac = u_fedd_frac
+        self._u_fper_frac = self.config['lhood']['u_fper_frac']
+        self._u_fedd_frac = self.config['lhood']['u_fedd_frac']
         self._priors = self.config['lhood']['priors']
 
         self._grid_interpolator = GridInterpolator(file=self.config['interp']['file'],
@@ -333,8 +325,8 @@ class BurstFit:
             coordinates as dictionary
         """
         x_epochs = np.full((self._n_epochs, len(self.interp_keys)),
-                               np.nan,
-                               dtype=float)
+                           np.nan,
+                           dtype=float)
 
         for i in range(self._n_epochs):
             for j, key in enumerate(self.interp_keys):
