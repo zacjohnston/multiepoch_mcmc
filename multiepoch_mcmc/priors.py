@@ -1,20 +1,26 @@
 import numpy as np
-from scipy.stats import beta
+from scipy.stats import norm, beta
 
 
 def flat_prior(x):
-    """Returns flat prior likelihood
+    """Returns flat (uniform) prior likelihood
     """
     return 1
 
 
-def log_z_prior(z,
-                z_sun=0.01,
-                a=10.1,
-                b=3.5,
-                loc=-3.5,
-                scale=4.5,
-                ):
+def gaussian(mean, std):
+    """Returns callable function for Gaussian distribution
+    """
+    return norm(loc=mean, scale=std).pdf
+
+
+def z_beta_prior(z,
+                 z_sun=0.01,
+                 a=10.1,
+                 b=3.5,
+                 loc=-3.5,
+                 scale=4.5,
+                 ):
     """Returns prior likelihood on metallicity
 
     Uses beta distribution based on modelled galactic composition
