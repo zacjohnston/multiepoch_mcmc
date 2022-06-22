@@ -7,6 +7,7 @@ dependencies:
   - numpy=1.22.*
   - pandas=1.4.*
   - scipy=1.7.*
+  - tqdm=4.64.*
   - pip:
       - emcee
       - chainconsumer
