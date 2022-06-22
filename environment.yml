@@ -1,0 +1,12 @@
+name: multiepoch_mcmc
+dependencies:
+  - python=3.8
+  - astropy=5.0.*
+  - h5py=3.6.*
+  - matplotlib=3.5.*
+  - numpy=1.22.*
+  - pandas=1.4.*
+  - scipy=1.7.*
+  - pip:
+      - emcee
+      - chainconsumer
