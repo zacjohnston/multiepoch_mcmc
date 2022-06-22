@@ -57,7 +57,7 @@ def main(n_steps,
                              grid_bounds=mv.grid_bounds,
                              weights=mv.weights)
 
-    sampler = mcmc.setup_sampler(burstfit, pos=pos, n_threads=n_threads)
+    sampler = mcmc.setup_sampler(bfit=bfit, pos=pos, n_threads=n_threads)
     iterations = round(n_steps / save_steps)
     t0 = time.time()
 
@@ -68,8 +68,10 @@ def main(n_steps,
 
         print('-' * 30)
         print(f'Doing steps: {step0} - {step1}')
-        pos, lnprob, rstate = mcmc.run_sampler(sampler, pos=pos, n_steps=save_steps)
-        # pos, lnprob, rstate, blob = mcmc.run_sampler(sampler, pos=pos, n_steps=save_steps)
+        pos, lnprob, rstate = mcmc.run_sampler(sampler=sampler,
+                                               pos=pos,
+                                               n_steps=save_steps,
+                                               print_progress=True)
 
         # ===== concatenate loaded chain to current chain =====
         if restart:

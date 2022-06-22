@@ -3,7 +3,7 @@ import emcee
 import time
 
 
-def setup_sampler(burstfit,
+def setup_sampler(bfit,
                   pos,
                   n_threads=1):
     """Initializes MCMC sampler object
@@ -12,14 +12,14 @@ def setup_sampler(burstfit,
 
     Parameters
     ----------
-    burstfit : BurstFit
+    bfit : BurstFit
     pos : [n_walkers, n_dim]
     n_threads : int
         number of compute threads to use
     """
     sampler = emcee.EnsembleSampler(nwalkers=pos.shape[0],
                                     ndim=pos.shape[1],
-                                    log_prob_fn=burstfit.lhood,
+                                    log_prob_fn=bfit.lhood,
                                     threads=n_threads)
 
     return sampler
