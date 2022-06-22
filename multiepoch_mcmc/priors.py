@@ -2,6 +2,24 @@ import numpy as np
 from scipy.stats import norm, beta
 
 
+def key_map(key):
+    """Maps key to prior function
+
+    Parameters
+    ----------
+    key : str
+    """
+    keys = {None: flat_prior,
+            'z_beta': z_beta_prior,
+            }
+
+    prior = keys.get(key)
+
+    if prior is None:
+        raise ValueError(f"invalid prior key '{key}' in config")
+    return
+
+
 def flat_prior(x):
     """Returns flat (uniform) prior likelihood
     """
