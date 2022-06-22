@@ -38,8 +38,6 @@ def main(n_steps,
     n_threads = int(n_threads)
     n_walkers = int(n_walkers)
 
-    print(f'Using {n_threads} threads')
-
     # if restart_step is None:
     restart = False
     start = 0
@@ -61,8 +59,8 @@ def main(n_steps,
                              weights=mv.weights)
 
     t0 = time.time()
+    print(f'\nRunning {n_walkers} walkers for {n_steps} steps with {n_threads} threads')
 
-    print('Running MCMC sampler')
     with Pool(processes=n_threads) as pool:
         sampler = EnsembleSampler(nwalkers=pos.shape[0],
                                   ndim=pos.shape[1],
