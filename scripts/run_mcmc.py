@@ -25,6 +25,10 @@ def main(n_steps,
 
     Parameters
     ----------
+    n_steps : int
+    n_walkers : int
+    n_threads : int
+    restart_step : int
     """
     path = os.path.dirname(__file__)
     out_path = os.path.join(path, '..', 'output')
@@ -58,7 +62,7 @@ def main(n_steps,
 
     t0 = time.time()
 
-    # ===== Run MCMC sampler =====
+    print('Running MCMC sampler')
     with Pool(processes=n_threads) as pool:
         sampler = EnsembleSampler(nwalkers=pos.shape[0],
                                   ndim=pos.shape[1],
@@ -70,14 +74,12 @@ def main(n_steps,
                          nsteps=n_steps,
                          progress=True)
 
-        # ===== concatenate loaded chain to current chain =====
         # if restart:
         #     save_chain = np.concatenate([chain0, sampler.chain], 1)
         # else:
         #     save_chain = sampler.chain
 
-    print('=' * 30)
-    print('Done!')
+    print('\nDone!')
 
     t1 = time.time()
     dt = t1 - t0
@@ -96,10 +98,9 @@ if __name__ == "__main__":
     if n_args < min_args:
         print(f"""Must provide at least {min_args} parameter(s):
                     1. n_steps       : number of mcmc steps to take
-                    (2. save_steps   : steps to do between saves)
-                    (3. n_walkers    : number of mcmc walkers)
-                    (4. n_threads    : number of threads/cores to use)
-                    (5. restart_step : step to restart from)""")
+                    (2. n_walkers    : number of mcmc walkers)
+                    (3. n_threads    : number of threads/cores to use)
+                    (4. restart_step : step to restart from)""")
         sys.exit(0)
 
     if n_args == min_args:
