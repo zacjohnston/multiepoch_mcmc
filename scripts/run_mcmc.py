@@ -7,19 +7,19 @@ from emcee import EnsembleSampler, backends
 
 # pyburst
 from multiepoch_mcmc import mcmc, burstfit, grid_interpolator
-from pyburst.mcmc import mcmc_versions
 
 # =============================================================================
 # Usage:
-# python run_mcmc.py [source] [version] [n_steps] [n_threads] [save_steps]
+# python run_mcmc.py <n_steps> <n_threads> <save_steps>
 # =============================================================================
 
-os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"  # recommended for parallel emcee
 
 
 def main(n_steps,
          n_walkers=1000,
          n_threads=6,
+         system='gs1826',
          restart_step=None):
     """Runs an MCMC simulation using interpolated burst model grid
 
@@ -27,12 +27,13 @@ def main(n_steps,
     ----------
     n_steps : int
     n_walkers : int
+    system : str
     n_threads : int
     restart_step : int
     """
     path = os.path.dirname(__file__)
     out_path = os.path.join(path, '..', 'output')
-    filepath = os.path.join(out_path, 'sampler.h5')
+    filepath = os.path.join(out_path, f'sampler_{system}.h5')
     backend = backends.HDFBackend(filepath)
 
     n_threads = int(n_threads)
@@ -50,13 +51,7 @@ def main(n_steps,
     #                                    n_steps=start)
     #     pos = chain0[:, -1, :]
 
-    mv = mcmc_versions.McmcVersion('grid5', 0)
-    interpolator = grid_interpolator.GridInterpolator()
-
-    bfit = burstfit.BurstFit(grid_interpolator=interpolator,
-                             priors=mv.priors,
-                             grid_bounds=mv.grid_bounds,
-                             weights=mv.weights)
+    bfit = burstfit.BurstFit(system=system)
 
     t0 = time.time()
     print(f'\nRunning {n_walkers} walkers for {n_steps} steps with {n_threads} threads')
