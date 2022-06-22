@@ -90,7 +90,7 @@ class BurstFit:
         filename = f'{self.system}.dat'
         filepath = os.path.join(path, '..', 'data', 'obs', self.system, filename)
 
-        print(f'Loading obs table: {os.path.abspath(filepath)}')
+        print(f'\nLoading obs table: {os.path.abspath(filepath)}')
         self._obs_table = pd.read_csv(filepath, delim_whitespace=True)
         self._obs_table.set_index('epoch', inplace=True, verify_integrity=True)
 
