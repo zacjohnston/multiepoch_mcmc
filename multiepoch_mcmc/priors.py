@@ -3,6 +3,8 @@ from scipy.stats import beta
 
 
 def flat_prior(x):
+    """Returns flat prior likelihood
+    """
     return 1
 
 
@@ -13,7 +15,12 @@ def log_z_prior(z,
                 loc=-3.5,
                 scale=4.5,
                 ):
-    """Returns prior on log metallicity
+    """Returns prior likelihood on metallicity
+
+    Uses beta distribution based on modelled galactic composition
+    in the direction of GS-1826
+
+    For details see Section 2.9 of Johnston et al. (2020)
     """
     log_beta = beta(a=a, b=b, loc=loc, scale=scale).pdf
 
