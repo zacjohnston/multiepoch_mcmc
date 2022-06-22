@@ -54,7 +54,7 @@ def main(n_steps,
     bfit = burstfit.BurstFit(system=system)
 
     t0 = time.time()
-    print(f'\nRunning {n_walkers} walkers for {n_steps} steps with {n_threads} threads')
+    print(f'\nRunning {n_walkers} walkers for {n_steps} steps using {n_threads} threads')
 
     with Pool(processes=n_threads) as pool:
         sampler = EnsembleSampler(nwalkers=pos.shape[0],

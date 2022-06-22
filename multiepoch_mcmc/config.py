@@ -16,7 +16,7 @@ def load_config(system):
     path = os.path.dirname(__file__)
     filepath = os.path.join(path, '..', 'config', f'{system}.ini')
 
-    print(f'Loading config: {filepath}')
+    print(f'\nLoading config: {os.path.abspath(filepath)}')
 
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Config file for system '{system}' not found")

@@ -85,7 +85,7 @@ class GridInterpolator:
     def _setup_interpolator(self):
         """Generates interpolator object from grid
         """
-        print('\nGenerating interpolator')
+        print('\nGenerating grid interpolator')
         t0 = time.time()
         x = []
 
