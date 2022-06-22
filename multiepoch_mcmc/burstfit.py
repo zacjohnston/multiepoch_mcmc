@@ -5,7 +5,8 @@ import astropy.units as u
 import astropy.constants as const
 
 # pyburst
-from multiepoch_mcmc import accretion, gravity
+from multiepoch_mcmc import accretion, gravity, config
+from multiepoch_mcmc.grid_interpolator import GridInterpolator
 
 
 class ZeroLhood(Exception):
@@ -22,27 +23,24 @@ class BurstFit:
     _ref_radius = 10                                        # reference NS raius [km]
 
     def __init__(self,
-                 grid_interpolator,
-                 priors,
-                 grid_bounds,
-                 weights,
+                 system='gs1826',
                  bprops=('rate', 'fluence', 'peak', 'fper', 'fedd'),
                  analytic_bprops=('fper', 'fedd'),
                  interp_bprops=('rate', 'fluence', 'peak'),
                  interp_keys=('mdot', 'x', 'z', 'qb', 'mass'),
-                 params=('mdot1', 'mdot2', 'mdot3', 'x', 'z', 'qb1', 'qb2', 'qb3', 'm_nw', 'm_gr', 'd_b', 'xi_ratio'),
                  epoch_unique=('mdot', 'qb'),
-                 system='gs1826',
                  epochs=(1998, 2000, 2007),
                  u_fper_frac=0.0,
                  u_fedd_frac=0.0,
                  zero_lhood=-np.inf):
         """"""
         self.system = system
+        self.config = config.load_config(system=self.system)
+
         self.epochs = epochs
         self._n_epochs = len(self.epochs)
 
-        self.params = params
+        self.params = self.config['keys']['params']
         self.interp_keys = interp_keys
         self.epoch_unique = epoch_unique
         self._param_aliases = {'mass': 'm_nw'}
@@ -51,13 +49,16 @@ class BurstFit:
         self.interp_bprops = interp_bprops
         self.analytic_bprops = analytic_bprops
         
-        self._grid_bounds = grid_bounds
-        self.weights = weights
+        self._grid_bounds = self.config['grid']['bounds']
+        self.weights = self.config['lhood']['weights']
         self._zero_lhood = zero_lhood
         self._u_fper_frac = u_fper_frac
         self._u_fedd_frac = u_fedd_frac
-        self._priors = priors
-        self._grid_interpolator = grid_interpolator
+        self._priors = self.config['lhood']['priors']
+
+        self._grid_interpolator = GridInterpolator(file=self.config['interp']['file'],
+                                                   params=self.config['interp']['params'],
+                                                   bvars=self.config['interp']['bvars'])
 
         self._obs_table = None
         self.obs_data = None

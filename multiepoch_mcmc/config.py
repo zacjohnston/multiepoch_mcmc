@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import ast
 import configparser
 
@@ -30,6 +31,7 @@ def load_config(system):
             config_dict[section][option] = ast.literal_eval(ini.get(section, option))
 
     config_dict['lhood']['priors'] = get_priors(config_dict)
+    config_dict['grid']['bounds'] = np.array(config_dict['grid']['bounds'])
 
     return config_dict
 

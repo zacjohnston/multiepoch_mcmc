@@ -17,7 +17,8 @@ def key_map(key):
 
     if prior is None:
         raise ValueError(f"invalid prior key '{key}' in config")
-    return
+
+    return prior
 
 
 def flat_prior(x):
