@@ -1,5 +1,5 @@
 import numpy as np
-import emcee
+from emcee import EnsembleSampler
 import time
 
 
@@ -17,10 +17,10 @@ def setup_sampler(bfit,
     pool : multiprocessing.Pool
         used for parallel compute
     """
-    sampler = emcee.EnsembleSampler(nwalkers=pos.shape[0],
-                                    ndim=pos.shape[1],
-                                    log_prob_fn=bfit.lhood,
-                                    pool=pool)
+    sampler = EnsembleSampler(nwalkers=pos.shape[0],
+                              ndim=pos.shape[1],
+                              log_prob_fn=bfit.lhood,
+                              pool=pool)
     return sampler
 
 
@@ -46,12 +46,10 @@ def run_sampler(sampler,
         print progress of sampler each step
     """
     t0 = time.time()
-    result = None
 
-    for _, result in enumerate(sampler.sample(pos,
-                                              iterations=n_steps,
-                                              progress=print_progress)):
-        pass
+    result = sampler.run_mcmc(initial_state=pos,
+                              nsteps=n_steps,
+                              progress=print_progress)
 
     t1 = time.time()
     dtime = t1 - t0
