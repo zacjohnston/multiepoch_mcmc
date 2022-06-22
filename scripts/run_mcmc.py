@@ -2,18 +2,22 @@ import numpy as np
 import sys
 import os
 import time
+from multiprocessing import Pool
+from emcee import EnsembleSampler, backends
 
 # pyburst
 from multiepoch_mcmc import mcmc, burstfit, grid_interpolator
 from pyburst.mcmc import mcmc_versions
+
 # =============================================================================
 # Usage:
 # python run_mcmc.py [source] [version] [n_steps] [n_threads] [save_steps]
 # =============================================================================
 
+os.environ["OMP_NUM_THREADS"] = "1"
+
 
 def main(n_steps,
-         save_steps=None,
          n_walkers=1000,
          n_threads=6,
          restart_step=None):
@@ -24,18 +28,13 @@ def main(n_steps,
     """
     path = os.path.dirname(__file__)
     out_path = os.path.join(path, '..', 'output')
+    filepath = os.path.join(out_path, 'sampler.h5')
+    backend = backends.HDFBackend(filepath)
 
-    chain0 = None
-
-    if save_steps is None:
-        save_steps = n_steps
-
-    save_steps = int(save_steps)
     n_threads = int(n_threads)
     n_walkers = int(n_walkers)
 
-    if (n_steps % save_steps) != 0:
-        raise ValueError(f'n_steps={n_steps} is not divisible by save_steps={save_steps}')
+    print(f'Using {n_threads} threads')
 
     # if restart_step is None:
     restart = False
@@ -57,38 +56,25 @@ def main(n_steps,
                              grid_bounds=mv.grid_bounds,
                              weights=mv.weights)
 
-    sampler = mcmc.setup_sampler(bfit=bfit, pos=pos, n_threads=n_threads)
-    iterations = round(n_steps / save_steps)
     t0 = time.time()
 
-    # ===== do 'save_steps' steps at a time =====
-    for i in range(iterations):
-        step0 = start + (i * save_steps)
-        step1 = start + ((i + 1) * save_steps)
+    # ===== Run MCMC sampler =====
+    with Pool(processes=n_threads) as pool:
+        sampler = EnsembleSampler(nwalkers=pos.shape[0],
+                                  ndim=pos.shape[1],
+                                  log_prob_fn=bfit.lhood,
+                                  pool=pool,
+                                  backend=backend)
 
-        print('-' * 30)
-        print(f'Doing steps: {step0} - {step1}')
-        pos, lnprob, rstate = mcmc.run_sampler(sampler=sampler,
-                                               pos=pos,
-                                               n_steps=save_steps,
-                                               print_progress=True)
+        sampler.run_mcmc(initial_state=pos,
+                         nsteps=n_steps,
+                         progress=True)
 
         # ===== concatenate loaded chain to current chain =====
-        if restart:
-            save_chain = np.concatenate([chain0, sampler.chain], 1)
-        else:
-            save_chain = sampler.chain
-
-        # === save chain ===
-        filename = 'chain.dat'
-        filepath = os.path.join(out_path, filename)
-        print(f'Saving chain: {os.path.abspath(filepath)}')
-        np.save(filepath, save_chain)
-
-        # ===== save sampler state =====
-        #  TODO: delete previous checkpoint after saving
-        # mcmc_tools.save_sampler_state(sampler, source=source, version=version,
-        #                               n_steps=step1, n_walkers=n_walkers)
+        # if restart:
+        #     save_chain = np.concatenate([chain0, sampler.chain], 1)
+        # else:
+        #     save_chain = sampler.chain
 
     print('=' * 30)
     print('Done!')
@@ -119,7 +105,7 @@ if __name__ == "__main__":
     if n_args == min_args:
         main(int(sys.argv[1]))
     else:
-        main(int(sys.argv[1]), **dict(arg.split('=') for arg in sys.argv[4:]))
+        main(int(sys.argv[1]), **dict(arg.split('=') for arg in sys.argv[2:]))
 
 
 
