@@ -121,6 +121,15 @@ def inverse_acceleration(g, m=None, r=None):
         return r
 
 
+def mass_from_g(g, r):
+    """Returns M (Newtonian), given g and R
+    """
+    g *= 1e14 * u.cm/u.s/u.s
+    m = g * (r * u.km)**2 / G
+
+    return m.to(u.M_sun)
+
+
 def plot_g():
     """Plots g=constant curves against R, M
     """
