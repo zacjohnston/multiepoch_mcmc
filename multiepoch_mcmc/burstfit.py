@@ -257,7 +257,7 @@ class BurstFit:
 
         return analytic
 
-    def _get_fedd(self, x_dict):
+    def _get_fedd(self, x_dict, x_epochs):
         """Returns Eddington flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
 
@@ -268,8 +268,8 @@ class BurstFit:
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
-        l_edd = accretion.edd_lum_newt(mass=x_dict['m_nw'],
-                                       x=x_dict['x'])
+        mass_nw = self._get_newt_mass(x_dict)
+        l_edd = accretion.edd_lum_newt(mass=mass_nw, x=x_dict['x'])
 
         out[:, 0] = l_edd
         out[:, 1] = l_edd * self._u_fedd_frac
@@ -427,15 +427,22 @@ class BurstFit:
         return shifted
 
     def _get_gr_factors(self, x_dict):
-        """Returns GR factors (m_ratio, redshift) given (m_nw, m_gr)"""
-        mass_nw = x_dict['m_nw']
+        """Returns GR factors (m_ratio, redshift) given (g, m_gr)"""
+        mass_nw = self._get_newt_mass(x_dict)
         mass_gr = x_dict['m_gr']
         m_ratio = mass_gr / mass_nw
+
         _, redshift = gravity.gr_corrections(r=self._ref_radius,
                                              m=mass_nw,
                                              phi=m_ratio)
-
         return m_ratio, redshift
+
+    def _get_newt_mass(self, x_dict):
+        """Returns Newtonian mass
+        """
+        mass_nw = gravity.mass_from_g(g=x_dict['g'], r=self._ref_radius)
+
+        return mass_nw.value
 
     # ===============================================================
     #                      Misc.
