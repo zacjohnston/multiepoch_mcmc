@@ -10,3 +10,4 @@ __pycache__
 .vscode/
 *.code-workspace
 *.ods
+*.pdf
