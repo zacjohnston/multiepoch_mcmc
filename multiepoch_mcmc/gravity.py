@@ -11,9 +11,9 @@ Msun_in_g = const.M_sun.to(u.g)
 
 
 def apply_units(r, m):
-    """Return get_radius and get_mass with units (cm, g)
+    """Return radius and mass with units (cm, g)
 
-    Assumes get_radius given in km, get_mass given in Msun
+    Assumes radius given in km, mass given in Msun
     """
     r = (r * u.km).to(u.cm)
     m = m * Msun_in_g
@@ -21,7 +21,7 @@ def apply_units(r, m):
 
 
 def get_redshift(r, m):
-    """Returns redshift (1+z) for given get_radius and get_mass (assuming GR)
+    """Returns redshift (1+z) for given radius and mass (assuming GR)
     """
     zeta = get_zeta(r=r, m=m)
     redshift = 1 / np.sqrt(1 - 2*zeta)
@@ -29,7 +29,7 @@ def get_redshift(r, m):
 
 
 def get_zeta(r, m):
-    """Returns zeta factor (GM/Rc^2) for given get_radius and get_mass
+    """Returns zeta factor (GM/Rc^2) for given radius and mass
     """
     r_u, m_u = apply_units(r=r, m=m)
     zeta = (G * m_u) / (r_u * c**2)
@@ -41,7 +41,7 @@ def get_zeta(r, m):
 
 
 def get_mass_radius(g, redshift):
-    """Return GR get_mass and get_radius for given gravity and redshift
+    """Return GR mass and radius for given gravity and redshift
 
     g : gravitational acceleration
     redshift : (1+z) redshift factor
@@ -149,11 +149,11 @@ def gr_corrections(r, m, phi=1.0, verbose=False):
     parameters
     ----------
     m : flt
-        Newtonian get_mass (Msol) (i.e. Kepler frame)
+        Newtonian mass (Msol) (i.e. Kepler frame)
     r   : flt
-        Newtonian get_radius (km)
+        Newtonian radius (km)
     phi : flt
-        Ratio of GR get_mass to Newtonian get_mass: M_GR / M_NW
+        Ratio of GR mass to Newtonian mass: M_GR / M_NW
         (NOTE: unrelated to grav potential phi)
     verbose : bool
     """
