@@ -257,7 +257,7 @@ class BurstFit:
 
         return analytic
 
-    def _get_fedd(self, x_dict, x_epochs):
+    def _get_fedd(self, x_dict):
         """Returns Eddington flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
 
@@ -265,7 +265,6 @@ class BurstFit:
         ----------
         x_dict : {param: value}
             coordinates as dictionary
-        x_epochs : [n_epochs, n_interp_keys]
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
