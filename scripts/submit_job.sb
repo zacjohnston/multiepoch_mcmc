@@ -16,7 +16,7 @@ n_walkers=2000
 conda activate multiepoch_mcmc
 cd "${SCRATCH}/multiepoch_mcmc/scripts" || exit
 
-python "run_mcmc.py ${n_steps} n_walkers=${n_walkers} n_threads=${SLURM_NTASKS}"
+python run_mcmc.py ${n_steps} n_walkers=${n_walkers} n_threads="${SLURM_NTASKS}"
  
 scontrol show job "${SLURM_JOB_ID}"     ### write job information to output file
 
