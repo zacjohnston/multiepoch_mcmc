@@ -20,7 +20,8 @@ def main(n_steps,
          n_walkers=1000,
          n_threads=6,
          system='gs1826',
-         restart_step=None):
+         restart_step=None,
+         progress=False):
     """Runs an MCMC simulation using interpolated burst model grid
 
     Parameters
@@ -30,6 +31,7 @@ def main(n_steps,
     system : str
     n_threads : int
     restart_step : int
+    progress : bool
     """
     path = os.path.dirname(__file__)
     out_path = os.path.join(path, '..', 'output')
@@ -65,7 +67,7 @@ def main(n_steps,
 
         sampler.run_mcmc(initial_state=pos,
                          nsteps=n_steps,
-                         progress=True)
+                         progress=progress)
 
         # if restart:
         #     save_chain = np.concatenate([chain0, sampler.chain], 1)
