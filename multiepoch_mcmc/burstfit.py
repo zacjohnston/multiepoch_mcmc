@@ -35,7 +35,6 @@ class BurstFit:
         self.params = self.config['keys']['params']
         self.interp_keys = self.config['keys']['interp_keys']
         self.epoch_unique = self.config['keys']['epoch_unique']
-        self._param_aliases = {'mass': 'm_nw'}
         
         self.bprops = self.config['keys']['bprops']
         self.interp_bprops = self.config['keys']['interp_bprops']
@@ -344,8 +343,6 @@ class BurstFit:
         x_dict : {param: value}
             coordinates as dictionary
         """
-        key = self._param_aliases.get(key, key)
-
         if key in self.epoch_unique:
             key = f'{key}{epoch_idx + 1}'
 
