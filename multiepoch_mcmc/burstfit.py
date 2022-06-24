@@ -287,7 +287,7 @@ class BurstFit:
         x_epochs : [n_epochs, n_interp_keys]
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
-        mass_ratio, redshift = self._get_gr_factors(x_dict=x_dict)
+        _, redshift = self._get_gr_factors(x_dict=x_dict)
 
         phi = (redshift - 1) * self._c.value ** 2 / redshift  # grav potential
         mdot = x_epochs[:, self.interp_keys.index('mdot')]
@@ -402,30 +402,25 @@ class BurstFit:
         flux_factor_b = 4 * np.pi * (x_dict['d_b'] * kpc_to_cm) ** 2
         flux_factor_p = flux_factor_b * x_dict['xi_ratio']
 
-        flux_factors = {'dt': 1,
-                        'rate': 1,
+        flux_factors = {'rate': 1,
                         'fluence': flux_factor_b,
                         'peak': flux_factor_b,
                         'fedd': flux_factor_b,
                         'fper': flux_factor_p,
-                        'tail_index': 1,
                         }
 
-        gr_corrections = {'dt': redshift / 3600,  # include hr to sec
-                          'rate': 1/redshift,
+        gr_corrections = {'rate': 1/redshift,
                           'fluence': mass_ratio,
                           'peak': mass_ratio / redshift,
                           'fedd': mass_ratio / redshift,
                           'fper': mass_ratio / redshift,
-                          'tail_index': 1,
                           }
 
         flux_factor = flux_factors.get(bprop)
         gr_correction = gr_corrections.get(bprop)
 
         if flux_factor is None:
-            raise ValueError('bprop must be one of (dt, rate, fluence, peak, '
-                             'fper, f_edd, tail_index)')
+            raise ValueError('bprop must be one of (rate, fluence, peak, fper, fedd)')
 
         shifted = (values * gr_correction) / flux_factor
 
