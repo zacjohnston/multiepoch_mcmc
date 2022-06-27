@@ -440,9 +440,9 @@ class BurstFit:
     def _get_newt_mass(self, x_dict):
         """Returns Newtonian mass
         """
-        mass_nw = gravity.mass_from_g(g=x_dict['g'], r=self._ref_radius)
-
-        return mass_nw.value
+        mass_nw = gravity.mass_from_g(g=x_dict['g'],
+                                      r=self._ref_radius)
+        return mass_nw
 
     # ===============================================================
     #                      Misc.
