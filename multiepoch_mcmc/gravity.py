@@ -8,8 +8,9 @@ G = const.G.to(u.km**3/(u.Msun*u.s**2)).value
 c = const.c.to(u.km/u.s).value
 
 # conversion factors
-g_to_cm = 1e14  # from [1e14 cm/s^2] to [cm/s^2]
-g_to_km = 1e9   # from [1e14 cm/s^2] to [km/s^2]
+km_to_cm = 1e5
+g_to_cm = 1e14                # from [1e14 cm/s^2] to [cm/s^2]
+g_to_km = g_to_cm / km_to_cm  # from [1e14 cm/s^2] to [km/s^2]
 
 
 # ===============================================================
@@ -239,21 +240,21 @@ def mass_from_g(g, r):
 def get_potential_newtonian(r, m):
     """Returns Newtonian gravitational potential given radius and mass
 
-    Returns: float [km^2 / s^2]
+    Returns: float [erg / g]
 
     Parameters
     ----------
     r : float [km]
     m : float [Msun]
     """
-    potential = -G * m / r
+    potential = -(G * m * km_to_cm**2) / r
     return potential
 
 
 def get_potential_gr(r, m):
     """Returns GR gravitational potential given mass and radius
 
-    Returns: float [km^2 / s^2]
+    Returns: float [erg / g]
 
     Parameters
     ----------
@@ -261,6 +262,6 @@ def get_potential_gr(r, m):
     m : float [Msun]
     """
     redshift = get_redshift(r=r, m=m)
-    potential = -(redshift - 1) * c**2 / redshift
+    potential = -(redshift - 1) * c**2 * km_to_cm**2 / redshift
 
     return potential
