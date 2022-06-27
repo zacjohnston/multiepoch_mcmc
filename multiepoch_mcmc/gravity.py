@@ -12,6 +12,9 @@ g_to_cm = 1e14  # from [1e14 cm/s^2] to [cm/s^2]
 g_to_km = 1e9   # from [1e14 cm/s^2] to [km/s^2]
 
 
+# ===============================================================
+#                      Newtonian <---> GR
+# ===============================================================
 def gr_corrections(r, m, phi=1.0):
     """Returns GR correction factors given Newtonian radius and mass
         Ref: Eq. B5, Keek & Heger 2011
@@ -22,12 +25,28 @@ def gr_corrections(r, m, phi=1.0):
 
     parameters
     ----------
-    r : flt [km]
+    r : float [km]
         Newtonian radius
-    m : flt [Msun]
+    m : float [Msun]
         Newtonian mass
-    phi : flt
-        Ratio of GR mass to Newtonian mass (M_GR / M_NW)
+    phi : float
+        mass ratio (M_GR / M_NW)
+    """
+    xi = get_xi(r=r, m=m, phi=phi)
+    redshift = xi**2 / phi
+
+    return xi, redshift
+
+
+def get_xi(r, m, phi):
+    """Returns radius ratio (R_GR / R_NW) given Newtonian mass, radius, and phi
+
+    Parameters
+    ----------
+    r : float [km]
+    m : float [Msun]
+    phi : float
+        mass ratio (M_GR / M_NW)
     """
     zeta = get_zeta(r=r, m=m)
 
@@ -35,9 +54,7 @@ def gr_corrections(r, m, phi=1.0):
     a = (2 / 9)**(1 / 3) * (b**2 / phi**2 - 2 * 6**(1 / 3)) / (b * zeta**2)
     xi = (zeta * phi / 2) * (1 + np.sqrt(1 - a) + np.sqrt(2 + a + 2 / np.sqrt(1 - a)))
 
-    redshift = xi**2 / phi
-
-    return xi, redshift
+    return xi
 
 
 def get_redshift(r, m):
@@ -45,8 +62,8 @@ def get_redshift(r, m):
 
     Parameters
     ----------
-    r : flt [km]
-    m : flt [Msun]
+    r : float [km]
+    m : float [Msun]
     """
     zeta = get_zeta(r=r, m=m)
     redshift = 1 / np.sqrt(1 - 2*zeta)
@@ -59,20 +76,22 @@ def get_zeta(r, m):
 
     Parameters
     ----------
-    r : flt [km]
-    m : flt [Msun]
+    r : float [km]
+    m : float [Msun]
     """
     zeta = (G * m) / (r * c**2)
-
     return zeta
 
 
+# ===============================================================
+#                   g, redshift ---> mass, radius
+# ===============================================================
 def get_mass_radius(g, redshift):
     """Return GR mass and radius for given gravity and redshift
 
-    g : flt
+    g : float
         gravitational acceleration [10^14 cm/s^2]
-    redshift : flt
+    redshift : float
         (1+z) factor
     """
     r = get_radius(g=g, redshift=redshift)
@@ -87,9 +106,9 @@ def get_radius(g, redshift):
 
     Parameters
     ----------
-    g : flt
+    g : float
         gravitational acceleration [10^14 cm/s^2]
-    redshift : flt
+    redshift : float
         (1+z) factor
     """
     z = redshift - 1
@@ -106,9 +125,9 @@ def get_mass(g, redshift):
 
     Parameters
     ----------
-    g : flt
+    g : float
         gravitational acceleration [10^14 cm/s^2]
-    redshift : flt
+    redshift : float
         (1+z) factor
     """
     z = redshift - 1
@@ -119,15 +138,18 @@ def get_mass(g, redshift):
     return m
 
 
+# ===============================================================
+#                   mass, radius ---> g
+# ===============================================================
 def get_acceleration_newtonian(r, m):
     """Returns Newtonian gravitational acceleration given radius and mass
 
-    Returns: flt [1e14 cm/s^2]
+    Returns: float [1e14 cm/s^2]
 
     Parameters
     ----------
-    r : flt [km]
-    m : flt [Msun]
+    r : float [km]
+    m : float [Msun]
     """
     g_newton = G * m / (g_to_km * r**2)
     return g_newton
@@ -136,12 +158,12 @@ def get_acceleration_newtonian(r, m):
 def get_acceleration_gr(r, m):
     """Returns GR gravitational acceleration given radius and mass
 
-    Returns: flt [1e14 cm/s^2]
+    Returns: float [1e14 cm/s^2]
 
     Parameters
     ----------
-    r : flt [km]
-    m : flt [Msun]
+    r : float [km]
+    m : float [Msun]
     """
     redshift = get_redshift(r=r, m=m)
     g_newton = get_acceleration_newtonian(r=r, m=m)
@@ -150,15 +172,18 @@ def get_acceleration_gr(r, m):
     return g_gr
 
 
+# ===============================================================
+#                   g, mass/radius ---> mass/radius
+# ===============================================================
 def r_from_g(g, m):
     """Returns radius given gravitational acceleration and mass
 
-    Returns: flt [km]
+    Returns: float [km]
 
     Parameters
     ----------
-    g : flt [1e14 cm/s^2]
-    m : flt [Msun]
+    g : float [1e14 cm/s^2]
+    m : float [Msun]
     """
     def root(r_root, m_root, g_root):
         return get_acceleration_gr(r=r_root, m=m_root) - g_root
@@ -171,12 +196,12 @@ def r_from_g(g, m):
 def mass_from_g(g, r):
     """Returns Newtonian mass given acceleration and radius
 
-    Returns: flt [Msun]
+    Returns: float [Msun]
 
     Parameters
     ----------
-    g : flt [1e14 cm/s^2]
-    r : flt [km]
+    g : float [1e14 cm/s^2]
+    r : float [km]
     """
     g *= g_to_km
     m = g * r**2 / G
@@ -184,31 +209,34 @@ def mass_from_g(g, r):
     return m
 
 
+# ===============================================================
+#                   mass, radius ---> potential
+# ===============================================================
 def get_potential_newtonian(r, m):
     """Returns Newtonian gravitational potential given radius and mass
 
-    Returns: phi [km^2 / s^2]
+    Returns: float [km^2 / s^2]
 
     Parameters
     ----------
-    r : flt [km]
-    m : flt [Msun]
+    r : float [km]
+    m : float [Msun]
     """
-    phi = -G * m / r
-    return phi
+    potential = -G * m / r
+    return potential
 
 
 def get_potential_gr(r, m):
     """Returns GR gravitational potential given mass and radius
 
-    Returns: phi [km^2 / s^2]
+    Returns: float [km^2 / s^2]
 
     Parameters
     ----------
-    r : flt [km]
-    m : flt [Msun]
+    r : float [km]
+    m : float [Msun]
     """
     redshift = get_redshift(r=r, m=m)
-    phi_gr = -(redshift - 1) * c**2 / redshift
+    potential = -(redshift - 1) * c**2 / redshift
 
-    return phi_gr
+    return potential
