@@ -182,33 +182,3 @@ def gr_corrections(r, m, phi=1.0):
     redshift = xi**2 / phi
 
     return xi, redshift
-
-
-def get_potential_newtonian(r, m):
-    """Returns Newtonian gravitational potential given radius and mass
-
-    Returns: phi [km^2 / s^2]
-
-    Parameters
-    ----------
-    r : flt [km]
-    m : flt [Msun]
-    """
-    phi = -G * m / r
-    return phi
-
-
-def get_potential_gr(r, m):
-    """Returns GR gravitational potential given mass and radius
-    
-    Returns: phi [km^2 / s^2]
-    
-    Parameters
-    ----------
-    r : flt [km]
-    m : flt [Msun]
-    """
-    redshift = get_redshift(r=r, m=m)
-    phi_gr = -(redshift - 1) * c**2 / redshift
-
-    return phi_gr
