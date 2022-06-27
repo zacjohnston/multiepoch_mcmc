@@ -53,6 +53,7 @@ class BurstFit:
 
         self._obs_table = None
         self.obs_data = None
+        self.terms = {}
 
         self._unpack_obs_data()
 
@@ -105,8 +106,8 @@ class BurstFit:
             coordinates of sample point (must match length and ordering of `param_keys`)
         """
         x_dict = self._get_x_dict(x=x)
-        terms = self._get_terms(x_dict)
-
+        self._get_terms(x_dict)
+        
         # ===== check priors =====
         try:
             lp = self.lnprior(x=x, x_dict=x_dict)
@@ -115,16 +116,14 @@ class BurstFit:
 
         # ===== Interpolate and calculate local model burst properties =====
         try:
-            interp_local, analytic_local = self._get_model_local(x_dict=x_dict,
-                                                                 terms=terms)
+            interp_local, analytic_local = self._get_model_local(x_dict=x_dict)
         except ZeroLhood:
             return self._zero_lhood
 
         # ===== Shift all burst properties to observable quantities =====
         y_shifted = self._get_y_shifted(interp_local=interp_local,
                                         analytic_local=analytic_local,
-                                        x_dict=x_dict,
-                                        terms=terms)
+                                        x_dict=x_dict)
 
         # ===== Evaluate likelihoods against observed data =====
         lh = self._compare_all(y_shifted)
@@ -198,7 +197,7 @@ class BurstFit:
 
         return lh
 
-    def bprop_sample(self, x, x_dict=None, terms=None):
+    def bprop_sample(self, x, x_dict=None):
         """Returns the predicted observables for given coordinates
 
         Effectively performs lhood() without the lhood parts
@@ -211,26 +210,23 @@ class BurstFit:
             sample coordinates
         x_dict : {param: value}
             coordinates as dictionary
-        terms : {}
         """
         if x_dict is None:
             x_dict = self._get_x_dict(x=x)
-            terms = self._get_terms(x_dict)
+            self._get_terms(x_dict)
 
-        interp_local, analytic_local = self._get_model_local(x_dict=x_dict,
-                                                             terms=terms)
+        interp_local, analytic_local = self._get_model_local(x_dict=x_dict)
 
         y_shifted = self._get_y_shifted(interp_local=interp_local,
                                         analytic_local=analytic_local,
-                                        x_dict=x_dict,
-                                        terms=terms)
+                                        x_dict=x_dict)
 
         return y_shifted
 
     # ===============================================================
     #                      Burst variables
     # ===============================================================
-    def _get_model_local(self, x_dict, terms):
+    def _get_model_local(self, x_dict):
         """Calculates model values for given coordinates
             Returns: interp_local, analytic_local
 
@@ -242,12 +238,11 @@ class BurstFit:
         x_epochs = self._get_x_epochs(x_dict=x_dict)
         interp_local = self._get_interp_bprops(interp_params=x_epochs)
         analytic_local = self._get_analytic_bprops(x_dict=x_dict,
-                                                   x_epochs=x_epochs,
-                                                   terms=terms)
+                                                   x_epochs=x_epochs)
 
         return interp_local, analytic_local
 
-    def _get_analytic_bprops(self, x_dict, x_epochs, terms):
+    def _get_analytic_bprops(self, x_dict, x_epochs):
         """Returns calculated analytic burst properties for given x_dict
 
         Parameters
@@ -255,7 +250,6 @@ class BurstFit:
         x_dict : {param: value}
             coordinates as dictionary
         x_epochs : [n_epochs, n_interp_keys]
-        terms: {}
         """
         function_map = {'fper': self.get_fper, 'fedd': self._get_fedd}
         analytic = np.full([self._n_epochs, 2*len(self.analytic_bprops)],
@@ -263,11 +257,11 @@ class BurstFit:
                            dtype=float)
 
         for i, bprop in enumerate(self.analytic_bprops):
-            analytic[:, 2*i: 2*(i+1)] = function_map[bprop](x_dict, terms, x_epochs)
+            analytic[:, 2*i: 2*(i+1)] = function_map[bprop](x_dict, x_epochs)
 
         return analytic
 
-    def _get_fedd(self, x_dict, terms, x_epochs):
+    def _get_fedd(self, x_dict, x_epochs):
         """Returns Eddington flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
 
@@ -275,18 +269,18 @@ class BurstFit:
         ----------
         x_dict : {param: value}
             coordinates as dictionary
-        terms: {}
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
-        l_edd = accretion.edd_lum_newt(mass=terms['mass_nw'], x=x_dict['x'])
+        l_edd = accretion.edd_lum_newt(mass=self.terms['mass_nw'],
+                                       x=x_dict['x'])
 
         out[:, 0] = l_edd
         out[:, 1] = l_edd * self._u_fedd_frac
 
         return out
 
-    def get_fper(self, x_dict, terms, x_epochs):
+    def get_fper(self, x_dict, x_epochs):
         """Returns persistent accretion flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
 
@@ -295,11 +289,10 @@ class BurstFit:
         x_dict : {param: value}
             coordinates as dictionary
         x_epochs : [n_epochs, n_interp_keys]
-        terms: {}
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
-        potential = (terms['redshift'] - 1) * self._c.value ** 2 / terms['redshift']
+        potential = (self.terms['redshift'] - 1) * self._c.value ** 2 / self.terms['redshift']
         mdot = x_epochs[:, self.interp_keys.index('mdot')]
         l_per = mdot * self._mdot_edd * potential
 
@@ -360,7 +353,7 @@ class BurstFit:
     # ===============================================================
     #                      Conversions
     # ===============================================================
-    def _get_y_shifted(self, interp_local, analytic_local, x_dict, terms):
+    def _get_y_shifted(self, interp_local, analytic_local, x_dict):
         """Returns predicted model values (+ uncertainties) shifted to an observer frame
         """
         interp_shifted = np.full_like(interp_local, np.nan, dtype=float)
@@ -374,8 +367,7 @@ class BurstFit:
             interp_shifted[:, i0:i1] = self._shift_to_observer(
                 values=interp_local[:, i0:i1],
                 bprop=bprop,
-                x_dict=x_dict,
-                terms=terms)
+                x_dict=x_dict)
 
         # ==== shift analytic bprops ====
         for i, bprop in enumerate(self.analytic_bprops):
@@ -384,14 +376,13 @@ class BurstFit:
             analytic_shifted[:, i0:i1] = self._shift_to_observer(
                 values=analytic_local[:, i0:i1],
                 bprop=bprop,
-                x_dict=x_dict,
-                terms=terms)
+                x_dict=x_dict)
 
         y_shifted = np.concatenate([interp_shifted, analytic_shifted], axis=1)
 
         return y_shifted
 
-    def _shift_to_observer(self, values, bprop, x_dict, terms):
+    def _shift_to_observer(self, values, bprop, x_dict):
         """Returns burst property shifted to observer frame/units
 
         Parameters
@@ -402,8 +393,6 @@ class BurstFit:
             name of burst property being converted/calculated
         x_dict : {}
             parameters (see param_keys)
-        terms : {}
-            terms derived from parameters
 
         Notes
         ------
@@ -422,11 +411,11 @@ class BurstFit:
                         'fper': flux_factor_p,
                         }
 
-        gr_corrections = {'rate': 1 / terms['redshift'],
-                          'fluence': terms['mass_ratio'],
-                          'peak': terms['mass_ratio'] / terms['redshift'],
-                          'fedd': terms['mass_ratio'] / terms['redshift'],
-                          'fper': terms['mass_ratio'] / terms['redshift'],
+        gr_corrections = {'rate': 1 / self.terms['redshift'],
+                          'fluence': self.terms['mass_ratio'],
+                          'peak': self.terms['mass_ratio'] / self.terms['redshift'],
+                          'fedd': self.terms['mass_ratio'] / self.terms['redshift'],
+                          'fper': self.terms['mass_ratio'] / self.terms['redshift'],
                           }
 
         flux_factor = flux_factors.get(bprop)
@@ -442,21 +431,18 @@ class BurstFit:
     def _get_terms(self, x_dict):
         """Get derived terms needed for calculations
         """
-        terms = {}
-
-        terms['mass_nw'] = gravity.mass_from_g(g=x_dict['g'],
+        self.terms['mass_nw'] = gravity.mass_from_g(g=x_dict['g'],
                                                r=self._kepler_radius)
 
-        terms['mass_ratio'] = x_dict['m_gr'] / terms['mass_nw']
+        self.terms['mass_ratio'] = x_dict['m_gr'] / self.terms['mass_nw']
 
-        terms['r_ratio'] = gravity.get_xi(r=self._kepler_radius,
-                                          m=terms['mass_nw'],
-                                          phi=terms['mass_ratio'])
+        self.terms['r_ratio'] = gravity.get_xi(r=self._kepler_radius,
+                                               m=self.terms['mass_nw'],
+                                               phi=self.terms['mass_ratio'])
 
-        terms['redshift'] = gravity.redshift_from_xi_phi(phi=terms['mass_ratio'],
-                                                         xi=terms['r_ratio'])
-
-        return terms
+        self.terms['redshift'] = gravity.redshift_from_xi_phi(
+                                                phi=self.terms['mass_ratio'],
+                                                xi=self.terms['r_ratio'])
 
     # ===============================================================
     #                      Misc.
