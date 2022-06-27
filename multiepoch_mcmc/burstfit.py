@@ -20,7 +20,7 @@ class BurstFit:
     """
     _c = const.c.to(u.cm / u.s)                             # speed of light
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
-    _ref_radius = 10                                        # reference NS raius [km]
+    _kepler_radius = 10                                     # Newtonian NS radius [km]
 
     def __init__(self,
                  system='gs1826',
@@ -432,7 +432,7 @@ class BurstFit:
         mass_gr = x_dict['m_gr']
         m_ratio = mass_gr / mass_nw
 
-        _, redshift = gravity.gr_corrections(r=self._ref_radius,
+        _, redshift = gravity.gr_corrections(r=self._kepler_radius,
                                              m=mass_nw,
                                              phi=m_ratio)
         return m_ratio, redshift
@@ -441,7 +441,7 @@ class BurstFit:
         """Returns Newtonian mass
         """
         mass_nw = gravity.mass_from_g(g=x_dict['g'],
-                                      r=self._ref_radius)
+                                      r=self._kepler_radius)
         return mass_nw
 
     # ===============================================================
