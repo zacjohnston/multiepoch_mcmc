@@ -432,9 +432,12 @@ class BurstFit:
         mass_gr = x_dict['m_gr']
         m_ratio = mass_gr / mass_nw
 
-        _, redshift = gravity.gr_corrections(r=self._kepler_radius,
-                                             m=mass_nw,
-                                             phi=m_ratio)
+        r_ratio = gravity.get_xi(r=self._kepler_radius,
+                                 m=mass_nw,
+                                 phi=m_ratio)
+
+        redshift = gravity.redshift_from_xi_phi(phi=m_ratio, xi=r_ratio)
+
         return m_ratio, redshift
 
     def _get_newt_mass(self, x_dict):

@@ -15,48 +15,10 @@ g_to_km = 1e9   # from [1e14 cm/s^2] to [km/s^2]
 # ===============================================================
 #                      Newtonian <---> GR
 # ===============================================================
-def gr_corrections(r, m, phi=1.0):
-    """Returns GR correction factors given Newtonian radius and mass
-        Ref: Eq. B5, Keek & Heger 2011
-
-    Returns: xi, redshift
-        xi: radius ratio (R_GR / R_NW)
-        redshift: (1+z) factor
-
-    parameters
-    ----------
-    r : float [km]
-        Newtonian radius
-    m : float [Msun]
-        Newtonian mass
-    phi : float
-        mass ratio (M_GR / M_NW)
-    """
-    xi = get_xi(r=r, m=m, phi=phi)
-    redshift = xi**2 / phi
-
-    return xi, redshift
-
-
-def get_xi(r, m, phi):
-    """Returns radius ratio (R_GR / R_NW) given Newtonian mass, radius, and phi
-
-    Parameters
-    ----------
-    r : float [km]
-    m : float [Msun]
-    phi : float
-        mass ratio (M_GR / M_NW)
-    """
-    zeta = get_zeta(r=r, m=m)
-
-    b = (9 * zeta**2 * phi**4 + np.sqrt(3) * phi**3 * np.sqrt(16 + 27 * zeta**4 * phi**2))**(1/3)
-    a = (2 / 9)**(1 / 3) * (b**2 / phi**2 - 2 * 6**(1 / 3)) / (b * zeta**2)
-    xi = (zeta * phi / 2) * (1 + np.sqrt(1 - a) + np.sqrt(2 + a + 2 / np.sqrt(1 - a)))
-
-    return xi
-
-
+#     Refs:
+#         - Appendix B, Keek & Heger (2011) [arxiv:1110.2172]
+#         - Sec 2.3, Johnston (2020) [arxiv:2004.00012]
+# ===============================================================
 def get_redshift(r, m):
     """Returns redshift (1+z) for given radius and mass
 
@@ -81,6 +43,68 @@ def get_zeta(r, m):
     """
     zeta = (G * m) / (r * c**2)
     return zeta
+
+
+def redshift_from_xi_phi(xi, phi):
+    """Returns redshift given mass and radius ratios
+
+    See: Eq B8, Keek & Heger (2011) [arxiv:1110.2172]
+
+    Returns: float
+        (1+z) factor
+
+    Parameters
+    ----------
+    xi : float
+       radius ratio (R_GR / R_NW)
+    phi : float
+        mass ratio (M_GR / M_NW)
+    """
+    redshift = xi**2 / phi
+    return redshift
+
+
+def get_xi(r, m, phi):
+    """Returns radius ratio (R_GR / R_NW) given Newtonian mass, radius, and phi
+
+    See: Eq B5, Keek & Heger (2011) [arxiv:1110.2172]
+
+    Returns: float
+
+    Parameters
+    ----------
+    r : float [km]
+    m : float [Msun]
+    phi : float
+        mass ratio (M_GR / M_NW)
+    """
+    zeta = get_zeta(r=r, m=m)
+
+    b = (9 * zeta**2 * phi**4 + np.sqrt(3) * phi**3 * np.sqrt(16 + 27 * zeta**4 * phi**2))**(1/3)
+    a = (2 / 9)**(1 / 3) * (b**2 / phi**2 - 2 * 6**(1 / 3)) / (b * zeta**2)
+    xi = (zeta * phi / 2) * (1 + np.sqrt(1 - a) + np.sqrt(2 + a + 2 / np.sqrt(1 - a)))
+
+    return xi
+
+
+def get_phi(r, m, xi):
+    """Returns mass ratio (M_GR / M_NW) given Newtonian mass, radius, and xi
+
+    See: Eq B8, Keek & Heger (2011) [arxiv:1110.2172]
+
+    Returns: float
+
+    Parameters
+    ----------
+    r : float [km]
+    m : float [Msun]
+    xi : float
+       radius ratio (R_GR / R_NW)
+    """
+    zeta = get_zeta(r=r, m=m)
+    phi = zeta * xi**3 * (np.sqrt(1 + 1 / (zeta**2 * xi**2)) - 1)
+
+    return phi
 
 
 # ===============================================================
