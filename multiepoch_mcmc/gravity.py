@@ -262,6 +262,20 @@ def get_potential_gr(r, m):
     m : float [Msun]
     """
     redshift = get_redshift(r=r, m=m)
-    potential = -(redshift - 1) * c**2 * km_to_cm**2 / redshift
+    potential = potential_from_redshift(redshift=redshift)
 
+    return potential
+
+
+def potential_from_redshift(redshift):
+    """Returns GR gravitational potential given redshift
+
+    Returns: float [erg / g]
+
+    Parameters
+    ----------
+    redshift : float
+        (1+z) factor
+    """
+    potential = -(redshift - 1) * c**2 * km_to_cm**2 / redshift
     return potential
