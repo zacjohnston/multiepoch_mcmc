@@ -39,7 +39,7 @@ class BurstFit:
     sample(x)
         Returns the modelled burst variables at given sample coordinates
     compare(model, u_model, bvar)
-        Returns log-likelihood of given model-observation comparison
+        Returns log-likelihood for given model-observation comparison
     lnprior(x)
         Returns prior likelihoods for given sample coordinates
     """
@@ -160,7 +160,7 @@ class BurstFit:
                                         analytic_local=analytic_local)
 
         # ===== Evaluate likelihood against observed data =====
-        lh = self._compare_all(y_shifted)
+        lh = self.compare(y_shifted)
         lhood = lp + lh
 
         return lhood
@@ -188,7 +188,30 @@ class BurstFit:
 
         return prior_lhood
 
-    def compare(self, model, u_model, bvar):
+    def compare(self, y_shifted):
+        """Returns log-likelihood for all burst variables against observations
+
+        Returns: float
+
+        Parameters
+        ----------
+        y_shifted : [n_epochs, n_bvars]
+            burst variables for all epochs in observer frame
+        """
+        lh = 0.0
+
+        for i, bvar in enumerate(self.bvars):
+            bvar_idx = 2 * i
+            u_bvar_idx = bvar_idx + 1
+
+            model = y_shifted[:, bvar_idx]
+            u_model = y_shifted[:, u_bvar_idx]
+
+            lh += self._compare_bvar(model=model, u_model=u_model, bvar=bvar)
+
+        return lh
+
+    def _compare_bvar(self, model, u_model, bvar):
         """Returns log-likelihood of given model values
 
         Calculates difference between modelled and observed values.
@@ -213,29 +236,6 @@ class BurstFit:
                               + np.log(2 * np.pi / inv_sigma2))
 
         return lh.sum()
-
-    def _compare_all(self, y_shifted):
-        """Returns log-likelihood for all burst variables against observations
-
-        Returns: float
-
-        Parameters
-        ----------
-        y_shifted : [n_epochs, n_bvars]
-            burst variables for all epochs in observer frame
-        """
-        lh = 0.0
-
-        for i, bvar in enumerate(self.bvars):
-            bvar_idx = 2 * i
-            u_bvar_idx = bvar_idx + 1
-
-            model = y_shifted[:, bvar_idx]
-            u_model = y_shifted[:, u_bvar_idx]
-
-            lh += self.compare(model=model, u_model=u_model, bvar=bvar)
-
-        return lh
 
     def sample(self, x):
         """Returns the predicted observables for given coordinates
