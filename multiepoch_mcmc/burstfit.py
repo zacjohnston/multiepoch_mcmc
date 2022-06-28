@@ -380,7 +380,7 @@ class BurstFit:
         self.terms['mass_nw'] = gravity.mass_from_g(g=self.x_dict['g'],
                                                     r=self._kepler_radius)
 
-        self.terms['mass_ratio'] = self.x_dict['m_gr'] / self.terms['mass_nw']
+        self.terms['mass_ratio'] = self.x_dict['mass'] / self.terms['mass_nw']
 
         self.terms['r_ratio'] = gravity.get_xi(r=self._kepler_radius,
                                                m=self.terms['mass_nw'],
