@@ -53,8 +53,10 @@ class BurstFit:
 
         self._obs_table = None
         self.obs_data = None
-        self.terms = {}
+
+        # dynamic variables
         self.x_dict = {}
+        self.terms = {}
 
         self._unpack_obs_data()
 
@@ -109,23 +111,23 @@ class BurstFit:
         self._get_x_dict(x=x)
         self._get_terms()
 
-        # ===== check priors =====
+        # ===== Get prior likelihoods =====
         try:
             lp = self.lnprior(x=x)
         except ZeroLhood:
             return self._zero_lhood
 
-        # ===== Interpolate and calculate local model burst properties =====
+        # ===== Interpolate + calculate local burst properties =====
         try:
             interp_local, analytic_local = self._get_model_local()
         except ZeroLhood:
             return self._zero_lhood
 
-        # ===== Shift all burst properties to observable quantities =====
+        # ===== Shift to observable quantities =====
         y_shifted = self._get_y_shifted(interp_local=interp_local,
                                         analytic_local=analytic_local)
 
-        # ===== Evaluate likelihoods against observed data =====
+        # ===== Evaluate likelihood against observed data =====
         lh = self._compare_all(y_shifted)
         lhood = lp + lh
 
