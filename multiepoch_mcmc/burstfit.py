@@ -37,9 +37,9 @@ class BurstFit:
         self.interp_keys = self.config['keys']['interp_keys']
         self.epoch_unique = self.config['keys']['epoch_unique']
         
-        self.bprops = self.config['keys']['bprops']
-        self.interp_bprops = self.config['keys']['interp_bprops']
-        self.analytic_bprops = self.config['keys']['analytic_bprops']
+        self.bvars = self.config['keys']['bvars']
+        self.interp_bvars = self.config['keys']['interp_bvars']
+        self.analytic_bvars = self.config['keys']['analytic_bvars']
         
         self._grid_bounds = self.config['grid']['bounds']
         self.weights = self.config['lhood']['weights']
@@ -158,7 +158,7 @@ class BurstFit:
 
         return prior_lhood
 
-    def compare(self, model, u_model, bprop):
+    def compare(self, model, u_model, bvar):
         """Returns log-likelihood of given model values
 
         Calculates difference between modelled and observed values.
@@ -170,13 +170,13 @@ class BurstFit:
             Model values for particular property
         u_model : 1darray
             Corresponding model uncertainties
-        bprop : str
+        bvar : str
             burst property being compared
         """
-        obs = self.obs_data[bprop]
-        u_obs = self.obs_data[f'u_{bprop}']
+        obs = self.obs_data[bvar]
+        u_obs = self.obs_data[f'u_{bvar}']
 
-        weight = self.weights[bprop]
+        weight = self.weights[bvar]
         inv_sigma2 = 1 / (u_model ** 2 + u_obs ** 2)
 
         lh = -0.5 * weight * ((model - obs) ** 2 * inv_sigma2
@@ -185,27 +185,27 @@ class BurstFit:
         return lh.sum()
 
     def _compare_all(self, y_shifted):
-        """Compares all bprops against observations and returns total likelihood
+        """Compares all bvars against observations and returns total likelihood
         """
         lh = 0.0
 
-        for i, bprop in enumerate(self.bprops):
-            bprop_idx = 2 * i
-            u_bprop_idx = bprop_idx + 1
+        for i, bvar in enumerate(self.bvars):
+            bvar_idx = 2 * i
+            u_bvar_idx = bvar_idx + 1
 
-            model = y_shifted[:, bprop_idx]
-            u_model = y_shifted[:, u_bprop_idx]
+            model = y_shifted[:, bvar_idx]
+            u_model = y_shifted[:, u_bvar_idx]
 
-            lh += self.compare(model=model, u_model=u_model, bprop=bprop)
+            lh += self.compare(model=model, u_model=u_model, bvar=bvar)
 
         return lh
 
-    def bprop_sample(self, x):
+    def bvar_sample(self, x):
         """Returns the predicted observables for given coordinates
 
         Effectively performs lhood() without the likelihood calculations
 
-        Returns: [n_epochs, bprops]
+        Returns: [n_epochs, bvars]
 
         Parameters
         ----------
@@ -230,12 +230,12 @@ class BurstFit:
             Returns: interp_local, analytic_local
         """
         x_epochs = self._get_x_epochs()
-        interp_local = self._get_interp_bprops(interp_params=x_epochs)
-        analytic_local = self._get_analytic_bprops(x_epochs=x_epochs)
+        interp_local = self._get_interp_bvars(interp_params=x_epochs)
+        analytic_local = self._get_analytic_bvars(x_epochs=x_epochs)
 
         return interp_local, analytic_local
 
-    def _get_analytic_bprops(self, x_epochs):
+    def _get_analytic_bvars(self, x_epochs):
         """Returns calculated analytic burst properties
 
         Parameters
@@ -243,12 +243,12 @@ class BurstFit:
         x_epochs : [n_epochs, n_interp_keys]
         """
         function_map = {'fper': self.get_fper, 'fedd': self._get_fedd}
-        analytic = np.full([self._n_epochs, 2*len(self.analytic_bprops)],
+        analytic = np.full([self._n_epochs, 2*len(self.analytic_bvars)],
                            np.nan,
                            dtype=float)
 
-        for i, bprop in enumerate(self.analytic_bprops):
-            analytic[:, 2*i: 2*(i+1)] = function_map[bprop](x_epochs)
+        for i, bvar in enumerate(self.analytic_bvars):
+            analytic[:, 2*i: 2*(i+1)] = function_map[bvar](x_epochs)
 
         return analytic
 
@@ -283,7 +283,7 @@ class BurstFit:
         out[:, 1] = out[:, 0] * self._u_fper_frac
         return out
 
-    def _get_interp_bprops(self, interp_params):
+    def _get_interp_bvars(self, interp_params):
         """Interpolates burst properties for N epochs
 
         Parameters
@@ -331,44 +331,44 @@ class BurstFit:
         interp_shifted = np.full_like(interp_local, np.nan, dtype=float)
         analytic_shifted = np.full_like(analytic_local, np.nan, dtype=float)
 
-        # ==== shift interpolated bprops ====
-        # TODO: concatenate bprop arrays and handle together
-        for i, bprop in enumerate(self.interp_bprops):
+        # ==== shift interpolated bvars ====
+        # TODO: concatenate bvar arrays and handle together
+        for i, bvar in enumerate(self.interp_bvars):
             i0 = 2 * i
             i1 = 2 * (i + 1)
             interp_shifted[:, i0:i1] = self._shift_to_observer(
                 values=interp_local[:, i0:i1],
-                bprop=bprop)
+                bvar=bvar)
 
-        # ==== shift analytic bprops ====
-        for i, bprop in enumerate(self.analytic_bprops):
+        # ==== shift analytic bvars ====
+        for i, bvar in enumerate(self.analytic_bvars):
             i0 = 2 * i
             i1 = 2 * (i + 1)
             analytic_shifted[:, i0:i1] = self._shift_to_observer(
                 values=analytic_local[:, i0:i1],
-                bprop=bprop)
+                bvar=bvar)
 
         y_shifted = np.concatenate([interp_shifted, analytic_shifted], axis=1)
 
         return y_shifted
 
-    def _shift_to_observer(self, values, bprop):
+    def _shift_to_observer(self, values, bvar):
         """Returns burst property shifted to observer frame/units
 
         Parameters
         ----------
         values : flt or ndarray
             model frame value(s)
-        bprop : str
+        bvar : str
             name of burst property being converted/calculated
 
         Notes
         ------
-        In special case bprop='fper', 'values' must be local accrate
+        In special case bvar='fper', 'values' must be local accrate
                 as fraction of Eddington rate.
         """
-        gr_factor = self._terms['gr_factor'][bprop]
-        flux_factor = self._terms['flux_factor'][bprop]
+        gr_factor = self._terms['gr_factor'][bvar]
+        flux_factor = self._terms['flux_factor'][bvar]
 
         shifted = (values * gr_factor) / flux_factor
 
