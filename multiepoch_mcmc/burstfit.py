@@ -18,7 +18,7 @@ class ZeroLhood(Exception):
 class BurstFit:
     """Class for comparing modelled bursts to observed bursts
     """
-    _c = const.c.to(u.cm / u.s).value                # speed of light
+    _c = const.c.to(u.cm / u.s).value                       # speed of light
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
     _kepler_radius = 10
     _kpc_to_cm = u.kpc.to(u.cm)
@@ -28,39 +28,39 @@ class BurstFit:
                  zero_lhood=-np.inf):
         """"""
         self.system = system
-        self.config = config.load_config(system=self.system)
+        self._config = config.load_config(system=self.system)
 
-        self.epochs = self.config['obs']['epochs']
+        self.epochs = self._config['obs']['epochs']
         self._n_epochs = len(self.epochs)
 
-        self.params = self.config['keys']['params']
-        self.interp_keys = self.config['keys']['interp_keys']
-        self.epoch_unique = self.config['keys']['epoch_unique']
+        self.params = self._config['keys']['params']
+        self._interp_keys = self._config['keys']['interp_keys']
+        self._epoch_unique = self._config['keys']['epoch_unique']
         
-        self.bvars = self.config['keys']['bvars']
-        self.interp_bvars = self.config['keys']['interp_bvars']
-        self.analytic_bvars = self.config['keys']['analytic_bvars']
+        self.bvars = self._config['keys']['bvars']
+        self._interp_bvars = self._config['keys']['interp_bvars']
+        self._analytic_bvars = self._config['keys']['analytic_bvars']
         
-        self._grid_bounds = self.config['grid']['bounds']
-        self.weights = self.config['lhood']['weights']
+        self._grid_bounds = self._config['grid']['bounds']
+        self._weights = self._config['lhood']['weights']
         self._zero_lhood = zero_lhood
-        self._u_fper_frac = self.config['lhood']['u_fper_frac']
-        self._u_fedd_frac = self.config['lhood']['u_fedd_frac']
-        self._priors = self.config['lhood']['priors']
-
-        self._grid_interpolator = GridInterpolator(file=self.config['interp']['file'],
-                                                   params=self.config['interp']['params'],
-                                                   bvars=self.config['interp']['bvars'])
+        self._u_fper_frac = self._config['lhood']['u_fper_frac']
+        self._u_fedd_frac = self._config['lhood']['u_fedd_frac']
+        self._priors = self._config['lhood']['priors']
 
         self._obs_table = None
         self.obs_data = None
 
         # dynamic variables
-        self.x_dict = {}
+        self._x_dict = {}
         self._terms = {}
         self._flux_factors = {}
 
         self._unpack_obs_data()
+
+        self._grid_interpolator = GridInterpolator(file=self._config['interp']['file'],
+                                                   params=self._config['interp']['params'],
+                                                   bvars=self._config['interp']['bvars'])
 
     # ===============================================================
     #                      Setup
@@ -153,7 +153,7 @@ class BurstFit:
             raise ZeroLhood
 
         prior_lhood = 0.0
-        for key, val in self.x_dict.items():
+        for key, val in self._x_dict.items():
             prior_lhood += np.log(self._priors[key](val))
 
         return prior_lhood
@@ -176,7 +176,7 @@ class BurstFit:
         obs = self.obs_data[bvar]
         u_obs = self.obs_data[f'u_{bvar}']
 
-        weight = self.weights[bvar]
+        weight = self._weights[bvar]
         inv_sigma2 = 1 / (u_model ** 2 + u_obs ** 2)
 
         lh = -0.5 * weight * ((model - obs) ** 2 * inv_sigma2
@@ -242,12 +242,12 @@ class BurstFit:
         ----------
         x_epochs : [n_epochs, n_interp_keys]
         """
-        function_map = {'fper': self.get_fper, 'fedd': self._get_fedd}
-        analytic = np.full([self._n_epochs, 2*len(self.analytic_bvars)],
+        function_map = {'fper': self._get_fper, 'fedd': self._get_fedd}
+        analytic = np.full([self._n_epochs, 2*len(self._analytic_bvars)],
                            np.nan,
                            dtype=float)
 
-        for i, bvar in enumerate(self.analytic_bvars):
+        for i, bvar in enumerate(self._analytic_bvars):
             analytic[:, 2*i: 2*(i+1)] = function_map[bvar](x_epochs)
 
         return analytic
@@ -259,14 +259,14 @@ class BurstFit:
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
         l_edd = accretion.edd_lum_newt(mass=self._terms['mass_nw'],
-                                       x=self.x_dict['x'])
+                                       x=self._x_dict['x'])
 
         out[:, 0] = l_edd
         out[:, 1] = l_edd * self._u_fedd_frac
 
         return out
 
-    def get_fper(self, x_epochs):
+    def _get_fper(self, x_epochs):
         """Returns persistent accretion flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
 
@@ -276,7 +276,7 @@ class BurstFit:
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
-        mdot = x_epochs[:, self.interp_keys.index('mdot')]
+        mdot = x_epochs[:, self._interp_keys.index('mdot')]
         l_per = mdot * self._mdot_edd * self._terms['potential']
 
         out[:, 0] = l_per
@@ -303,12 +303,12 @@ class BurstFit:
 
         Returns: [n_epochs, n_interp_params]
         """
-        x_epochs = np.full((self._n_epochs, len(self.interp_keys)),
+        x_epochs = np.full((self._n_epochs, len(self._interp_keys)),
                            np.nan,
                            dtype=float)
 
         for i in range(self._n_epochs):
-            for j, key in enumerate(self.interp_keys):
+            for j, key in enumerate(self._interp_keys):
                 x_epochs[i, j] = self._get_interp_param(key=key,
                                                         epoch_idx=i)
 
@@ -317,10 +317,10 @@ class BurstFit:
     def _get_interp_param(self, key, epoch_idx):
         """Extracts interp param value from full x_dict
         """
-        if key in self.epoch_unique:
+        if key in self._epoch_unique:
             key = f'{key}{epoch_idx + 1}'
 
-        return self.x_dict[key]
+        return self._x_dict[key]
 
     # ===============================================================
     #                      Conversions
@@ -333,7 +333,7 @@ class BurstFit:
 
         # ==== shift interpolated bvars ====
         # TODO: concatenate bvar arrays and handle together
-        for i, bvar in enumerate(self.interp_bvars):
+        for i, bvar in enumerate(self._interp_bvars):
             i0 = 2 * i
             i1 = 2 * (i + 1)
             interp_shifted[:, i0:i1] = self._shift_to_observer(
@@ -341,7 +341,7 @@ class BurstFit:
                 bvar=bvar)
 
         # ==== shift analytic bvars ====
-        for i, bvar in enumerate(self.analytic_bvars):
+        for i, bvar in enumerate(self._analytic_bvars):
             i0 = 2 * i
             i1 = 2 * (i + 1)
             analytic_shifted[:, i0:i1] = self._shift_to_observer(
@@ -377,10 +377,10 @@ class BurstFit:
     def _get_terms(self):
         """Get derived terms needed for calculations
         """
-        self._terms['mass_nw'] = gravity.mass_from_g(g=self.x_dict['g'],
+        self._terms['mass_nw'] = gravity.mass_from_g(g=self._x_dict['g'],
                                                     r=self._kepler_radius)
 
-        self._terms['mass_ratio'] = self.x_dict['mass'] / self._terms['mass_nw']
+        self._terms['mass_ratio'] = self._x_dict['mass'] / self._terms['mass_nw']
 
         self._terms['r_ratio'] = gravity.get_xi(r=self._kepler_radius,
                                                m=self._terms['mass_nw'],
@@ -392,8 +392,8 @@ class BurstFit:
 
         self._terms['potential'] = -gravity.potential_from_redshift(self._terms['redshift'])
 
-        self._flux_factors['burst'] = 4 * np.pi * (self.x_dict['d_b'] * self._kpc_to_cm)**2
-        self._flux_factors['pers'] = self._flux_factors['burst'] * self.x_dict['xi_ratio']
+        self._flux_factors['burst'] = 4 * np.pi * (self._x_dict['d_b'] * self._kpc_to_cm)**2
+        self._flux_factors['pers'] = self._flux_factors['burst'] * self._x_dict['xi_ratio']
 
         self._terms['flux_factor'] = {'rate': 1,
                                       'fluence': self._flux_factors['burst'],
@@ -423,4 +423,4 @@ class BurstFit:
             coordinates of sample
         """
         for i, key in enumerate(self.params):
-            self.x_dict[key] = x[i]
+            self._x_dict[key] = x[i]
