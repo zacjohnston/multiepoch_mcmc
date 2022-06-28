@@ -57,7 +57,7 @@ class BurstFit:
 
         # dynamic variables
         self.x_dict = {}
-        self.terms = {}
+        self._terms = {}
         self.flux_factors = {}
 
         self._unpack_obs_data()
@@ -203,7 +203,7 @@ class BurstFit:
     def bprop_sample(self, x):
         """Returns the predicted observables for given coordinates
 
-        Effectively performs lhood() without the lhood parts
+        Effectively performs lhood() without the likelihood calculations
 
         Returns: [n_epochs, bprops]
 
@@ -258,7 +258,7 @@ class BurstFit:
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
-        l_edd = accretion.edd_lum_newt(mass=self.terms['mass_nw'],
+        l_edd = accretion.edd_lum_newt(mass=self._terms['mass_nw'],
                                        x=self.x_dict['x'])
 
         out[:, 0] = l_edd
@@ -277,7 +277,7 @@ class BurstFit:
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
         mdot = x_epochs[:, self.interp_keys.index('mdot')]
-        l_per = mdot * self._mdot_edd * self.terms['potential']
+        l_per = mdot * self._mdot_edd * self._terms['potential']
 
         out[:, 0] = l_per
         out[:, 1] = out[:, 0] * self._u_fper_frac
@@ -367,8 +367,8 @@ class BurstFit:
         In special case bprop='fper', 'values' must be local accrate
                 as fraction of Eddington rate.
         """
-        gr_factor = self.terms['gr_factor'][bprop]
-        flux_factor = self.terms['flux_factor'][bprop]
+        gr_factor = self._terms['gr_factor'][bprop]
+        flux_factor = self._terms['flux_factor'][bprop]
 
         shifted = (values * gr_factor) / flux_factor
 
@@ -377,37 +377,37 @@ class BurstFit:
     def _get_terms(self):
         """Get derived terms needed for calculations
         """
-        self.terms['mass_nw'] = gravity.mass_from_g(g=self.x_dict['g'],
+        self._terms['mass_nw'] = gravity.mass_from_g(g=self.x_dict['g'],
                                                     r=self._kepler_radius)
 
-        self.terms['mass_ratio'] = self.x_dict['mass'] / self.terms['mass_nw']
+        self._terms['mass_ratio'] = self.x_dict['mass'] / self._terms['mass_nw']
 
-        self.terms['r_ratio'] = gravity.get_xi(r=self._kepler_radius,
-                                               m=self.terms['mass_nw'],
-                                               phi=self.terms['mass_ratio'])
+        self._terms['r_ratio'] = gravity.get_xi(r=self._kepler_radius,
+                                               m=self._terms['mass_nw'],
+                                               phi=self._terms['mass_ratio'])
 
-        self.terms['redshift'] = gravity.redshift_from_xi_phi(
-                                                phi=self.terms['mass_ratio'],
-                                                xi=self.terms['r_ratio'])
+        self._terms['redshift'] = gravity.redshift_from_xi_phi(
+                                                phi=self._terms['mass_ratio'],
+                                                xi=self._terms['r_ratio'])
 
-        self.terms['potential'] = -gravity.potential_from_redshift(self.terms['redshift'])
+        self._terms['potential'] = -gravity.potential_from_redshift(self._terms['redshift'])
 
         self.flux_factors['burst'] = 4 * np.pi * (self.x_dict['d_b'] * self._kpc_to_cm)**2
         self.flux_factors['pers'] = self.flux_factors['burst'] * self.x_dict['xi_ratio']
 
-        self.terms['flux_factor'] = {'rate': 1,
-                                     'fluence': self.flux_factors['burst'],
-                                     'peak': self.flux_factors['burst'],
-                                     'fedd': self.flux_factors['burst'],
-                                     'fper': self.flux_factors['pers'],
-                                     }
+        self._terms['flux_factor'] = {'rate': 1,
+                                      'fluence': self.flux_factors['burst'],
+                                      'peak': self.flux_factors['burst'],
+                                      'fedd': self.flux_factors['burst'],
+                                      'fper': self.flux_factors['pers'],
+                                      }
 
-        self.terms['gr_factor'] = {'rate': 1 / self.terms['redshift'],
-                                   'fluence': self.terms['mass_ratio'],
-                                   'peak': self.terms['mass_ratio'] / self.terms['redshift'],
-                                   'fedd': self.terms['mass_ratio'] / self.terms['redshift'],
-                                   'fper': self.terms['mass_ratio'] / self.terms['redshift'],
-                                   }
+        self._terms['gr_factor'] = {'rate': 1 / self._terms['redshift'],
+                                    'fluence': self._terms['mass_ratio'],
+                                    'peak': self._terms['mass_ratio'] / self._terms['redshift'],
+                                    'fedd': self._terms['mass_ratio'] / self._terms['redshift'],
+                                    'fper': self._terms['mass_ratio'] / self._terms['redshift'],
+                                    }
 
     # ===============================================================
     #                      Misc.
