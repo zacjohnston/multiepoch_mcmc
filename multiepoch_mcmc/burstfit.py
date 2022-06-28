@@ -47,11 +47,17 @@ class BurstFit:
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
     _kepler_radius = 10                                     # NS radius used in kepler
     _kpc_to_cm = u.kpc.to(u.cm)
+    _zero_lhood = -np.inf
 
     def __init__(self,
                  system='gs1826',
-                 zero_lhood=-np.inf):
-        """"""
+                 ):
+        """
+        Parameters
+        ----------
+        system : str
+            name of bursting system
+        """
         self.system = system
         self._config = config.load_config(system=self.system)
 
@@ -68,7 +74,6 @@ class BurstFit:
         
         self._grid_bounds = self._config['grid']['bounds']
         self._weights = self._config['lhood']['weights']
-        self._zero_lhood = zero_lhood
         self._u_fper_frac = self._config['lhood']['u_fper_frac']
         self._u_fedd_frac = self._config['lhood']['u_fedd_frac']
         self._priors = self._config['lhood']['priors']
