@@ -58,7 +58,7 @@ class BurstFit:
         # dynamic variables
         self.x_dict = {}
         self._terms = {}
-        self.flux_factors = {}
+        self._flux_factors = {}
 
         self._unpack_obs_data()
 
@@ -392,14 +392,14 @@ class BurstFit:
 
         self._terms['potential'] = -gravity.potential_from_redshift(self._terms['redshift'])
 
-        self.flux_factors['burst'] = 4 * np.pi * (self.x_dict['d_b'] * self._kpc_to_cm)**2
-        self.flux_factors['pers'] = self.flux_factors['burst'] * self.x_dict['xi_ratio']
+        self._flux_factors['burst'] = 4 * np.pi * (self.x_dict['d_b'] * self._kpc_to_cm)**2
+        self._flux_factors['pers'] = self._flux_factors['burst'] * self.x_dict['xi_ratio']
 
         self._terms['flux_factor'] = {'rate': 1,
-                                      'fluence': self.flux_factors['burst'],
-                                      'peak': self.flux_factors['burst'],
-                                      'fedd': self.flux_factors['burst'],
-                                      'fper': self.flux_factors['pers'],
+                                      'fluence': self._flux_factors['burst'],
+                                      'peak': self._flux_factors['burst'],
+                                      'fedd': self._flux_factors['burst'],
+                                      'fper': self._flux_factors['pers'],
                                       }
 
         self._terms['gr_factor'] = {'rate': 1 / self._terms['redshift'],
