@@ -20,7 +20,7 @@ class BurstFit:
     """
     _c = const.c.to(u.cm / u.s).value                       # speed of light
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
-    _kepler_radius = 10
+    _kepler_radius = 10                                     # NS radius used in kepler
     _kpc_to_cm = u.kpc.to(u.cm)
 
     def __init__(self,
@@ -34,8 +34,8 @@ class BurstFit:
         self._n_epochs = len(self.epochs)
 
         self.params = self._config['keys']['params']
-        self._interp_keys = self._config['keys']['interp_keys']
-        self._epoch_unique = self._config['keys']['epoch_unique']
+        self._interp_params = self._config['keys']['interp_params']
+        self._epoch_params = self._config['keys']['epoch_params']
         
         self.bvars = self._config['keys']['bvars']
         self._interp_bvars = self._config['keys']['interp_bvars']
@@ -240,7 +240,7 @@ class BurstFit:
 
         Parameters
         ----------
-        x_epochs : [n_epochs, n_interp_keys]
+        x_epochs : [n_epochs, n_interp_params]
         """
         function_map = {'fper': self._get_fper, 'fedd': self._get_fedd}
         analytic = np.full([self._n_epochs, 2*len(self._analytic_bvars)],
@@ -272,11 +272,11 @@ class BurstFit:
 
         Parameters
         ----------
-        x_epochs : [n_epochs, n_interp_keys]
+        x_epochs : [n_epochs, n_interp_params]
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
-        mdot = x_epochs[:, self._interp_keys.index('mdot')]
+        mdot = x_epochs[:, self._interp_params.index('mdot')]
         l_per = mdot * self._mdot_edd * self._terms['potential']
 
         out[:, 0] = l_per
@@ -303,12 +303,12 @@ class BurstFit:
 
         Returns: [n_epochs, n_interp_params]
         """
-        x_epochs = np.full((self._n_epochs, len(self._interp_keys)),
+        x_epochs = np.full((self._n_epochs, len(self._interp_params)),
                            np.nan,
                            dtype=float)
 
         for i in range(self._n_epochs):
-            for j, key in enumerate(self._interp_keys):
+            for j, key in enumerate(self._interp_params):
                 x_epochs[i, j] = self._get_interp_param(key=key,
                                                         epoch_idx=i)
 
@@ -317,7 +317,7 @@ class BurstFit:
     def _get_interp_param(self, key, epoch_idx):
         """Extracts interp param value from full x_dict
         """
-        if key in self._epoch_unique:
+        if key in self._epoch_params:
             key = f'{key}{epoch_idx + 1}'
 
         return self._x_dict[key]
