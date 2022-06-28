@@ -200,7 +200,7 @@ class BurstFit:
 
         return lh
 
-    def bvar_sample(self, x):
+    def sample(self, x):
         """Returns the predicted observables for given coordinates
 
         Effectively performs lhood() without the likelihood calculations
