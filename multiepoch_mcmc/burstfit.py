@@ -16,7 +16,32 @@ class ZeroLhood(Exception):
 
 
 class BurstFit:
-    """Class for comparing modelled bursts to observed bursts
+    """
+    Class for sampling modelled bursts and comparing to observations
+
+    Attributes
+    ----------
+    bvars : [str]
+        burst variable keys
+    epochs : [int]
+        observation epochs to model
+    obs_data : {}
+        observed burst variables to compare to
+    params : [str]
+        model parameter keys
+    system : str
+        name of bursting system being modelled
+
+    Methods
+    -------
+    lhood(x)
+        Calculates log-likelihood for given sample coordinates
+    sample(x)
+        Returns the modelled burst variables at given sample coordinates
+    compare(model, u_model, bvar)
+        Returns log-likelihood of given model-observation comparison
+    lnprior(x)
+        Returns prior likelihoods for given sample coordinates
     """
     _c = const.c.to(u.cm / u.s).value                       # speed of light
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
@@ -88,7 +113,7 @@ class BurstFit:
         filename = f'{self.system}.dat'
         filepath = os.path.join(path, '..', 'data', 'obs', self.system, filename)
 
-        print(f'\nLoading obs table: {os.path.abspath(filepath)}')
+        print(f'Loading obs table: {os.path.abspath(filepath)}')
         self._obs_table = pd.read_csv(filepath, delim_whitespace=True)
         self._obs_table.set_index('epoch', inplace=True, verify_integrity=True)
 
