@@ -89,7 +89,7 @@ class BurstSampler:
         self._unpack_obs_data()
 
         self._grid_interpolator = GridInterpolator(file=self._config['interp']['file'],
-                                                   params=self._config['interp']['params'],
+                                                   params=self._interp_params,
                                                    bvars=self._config['interp']['bvars'])
 
     # ===============================================================
@@ -128,7 +128,7 @@ class BurstSampler:
             raise KeyError(f'epoch(s) not found in obs_data table')
 
     # ===============================================================
-    #                      Likelihoods
+    #                      Likelihood Sampling
     # ===============================================================
     def lhood(self, x):
         """Returns log-likelihood for given coordinate
@@ -138,7 +138,7 @@ class BurstSampler:
         Parameters
         ----------
         x : 1Darray
-            coordinates of sample point (must match length and ordering of `param_keys`)
+            sample coordinates (must exactly match `params` length and ordering)
         """
         self._get_x_dict(x=x)
         self._get_terms()
@@ -173,6 +173,7 @@ class BurstSampler:
         Parameters
         ----------
         x : 1Darray
+            sample coordinates (must exactly match `params` length and ordering)
         """
         lower_bounds = self._grid_bounds[:, 0]
         upper_bounds = self._grid_bounds[:, 1]
@@ -260,7 +261,7 @@ class BurstSampler:
         return y_shifted
 
     # ===============================================================
-    #                      Burst variables
+    #                      Burst Sampling
     # ===============================================================
     def _get_model_local(self):
         """Calculates model values for given coordinates
