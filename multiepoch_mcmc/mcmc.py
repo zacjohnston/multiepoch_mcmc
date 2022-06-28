@@ -3,7 +3,7 @@ from emcee import EnsembleSampler
 import time
 
 
-def setup_sampler(bfit,
+def setup_sampler(bsampler,
                   pos,
                   pool=None):
     """Initializes MCMC sampler object
@@ -12,14 +12,14 @@ def setup_sampler(bfit,
 
     Parameters
     ----------
-    bfit : BurstFit
+    bsampler : BurstSampler
     pos : [n_walkers, n_dim]
     pool : multiprocessing.Pool
         used for parallel compute
     """
     sampler = EnsembleSampler(nwalkers=pos.shape[0],
                               ndim=pos.shape[1],
-                              log_prob_fn=bfit.lhood,
+                              log_prob_fn=bsampler.lhood,
                               pool=pool)
     return sampler
 

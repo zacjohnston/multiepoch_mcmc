@@ -15,7 +15,7 @@ class ZeroLhood(Exception):
     pass
 
 
-class BurstFit:
+class BurstSampler:
     """
     Class for sampling modelled bursts and comparing to observations
 

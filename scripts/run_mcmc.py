@@ -6,7 +6,7 @@ from multiprocessing import Pool
 from emcee import EnsembleSampler, backends
 
 # pyburst
-from multiepoch_mcmc import mcmc, burstfit, grid_interpolator
+from multiepoch_mcmc import mcmc, burst_sampler, grid_interpolator
 
 # =============================================================================
 # Usage:
@@ -53,7 +53,7 @@ def main(n_steps,
     #                                    n_steps=start)
     #     pos = chain0[:, -1, :]
 
-    bfit = burstfit.BurstFit(system=system)
+    bsampler = burst_sampler.BurstSampler(system=system)
 
     t0 = time.time()
     print(f'\nRunning {n_walkers} walkers for {n_steps} steps using {n_threads} threads')
@@ -61,7 +61,7 @@ def main(n_steps,
     with Pool(processes=n_threads) as pool:
         sampler = EnsembleSampler(nwalkers=pos.shape[0],
                                   ndim=pos.shape[1],
-                                  log_prob_fn=bfit.lhood,
+                                  log_prob_fn=bsampler.lhood,
                                   pool=pool,
                                   backend=backend)
 
