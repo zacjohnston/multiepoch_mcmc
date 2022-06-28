@@ -18,9 +18,10 @@ class ZeroLhood(Exception):
 class BurstFit:
     """Class for comparing modelled bursts to observed bursts
     """
-    _c = const.c.to(u.cm / u.s)                             # speed of light
+    _c = const.c.to(u.cm / u.s).value                # speed of light
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
-    _kepler_radius = 10                                     # Newtonian NS radius [km]
+    _kepler_radius = 10
+    _kpc_to_cm = u.kpc.to(u.cm)
 
     def __init__(self,
                  system='gs1826',
@@ -274,7 +275,7 @@ class BurstFit:
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
-        potential = (self.terms['redshift'] - 1) * self._c.value ** 2 / self.terms['redshift']
+        potential = (self.terms['redshift'] - 1) * self._c ** 2 / self.terms['redshift']
         mdot = x_epochs[:, self.interp_keys.index('mdot')]
         l_per = mdot * self._mdot_edd * potential
 
@@ -366,9 +367,7 @@ class BurstFit:
         In special case bprop='fper', 'values' must be local accrate
                 as fraction of Eddington rate.
         """
-        kpc_to_cm = u.kpc.to(u.cm)
-
-        flux_factor_b = 4 * np.pi * (self.x_dict['d_b'] * kpc_to_cm) ** 2
+        flux_factor_b = 4 * np.pi * (self.x_dict['d_b'] * self._kpc_to_cm) ** 2
         flux_factor_p = flux_factor_b * self.x_dict['xi_ratio']
 
         flux_factors = {'rate': 1,
