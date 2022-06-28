@@ -215,7 +215,14 @@ class BurstFit:
         return lh.sum()
 
     def _compare_all(self, y_shifted):
-        """Compares all bvars against observations and returns total likelihood
+        """Returns log-likelihood for all burst variables against observations
+
+        Returns: float
+
+        Parameters
+        ----------
+        y_shifted : [n_epochs, n_bvars]
+            burst variables for all epochs in observer frame
         """
         lh = 0.0
 
@@ -235,7 +242,7 @@ class BurstFit:
 
         Effectively performs lhood() without the likelihood calculations
 
-        Returns: [n_epochs, bvars]
+        Returns: [n_epochs, n_bvars]
 
         Parameters
         ----------
@@ -257,7 +264,8 @@ class BurstFit:
     # ===============================================================
     def _get_model_local(self):
         """Calculates model values for given coordinates
-            Returns: interp_local, analytic_local
+
+        Returns: [n_epochs, n_interp_bvars], [n_epochs, n_analytic_bvars]
         """
         x_epochs = self._get_x_epochs()
         interp_local = self._get_interp_bvars(interp_params=x_epochs)
@@ -267,6 +275,8 @@ class BurstFit:
 
     def _get_analytic_bvars(self, x_epochs):
         """Returns calculated analytic burst properties
+
+        Returns: [n_epochs, n_analytic_bvars]
 
         Parameters
         ----------
@@ -285,6 +295,8 @@ class BurstFit:
     def _get_fedd(self, x_epochs):
         """Returns Eddington flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
+
+        Returns: [n_epochs, float]
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
@@ -299,6 +311,8 @@ class BurstFit:
     def _get_fper(self, x_epochs):
         """Returns persistent accretion flux array (n_epochs, 2)
             Note: Actually luminosity, as this is the local value
+
+        Returns: [n_epochs, float]
 
         Parameters
         ----------
@@ -315,6 +329,8 @@ class BurstFit:
 
     def _get_interp_bvars(self, interp_params):
         """Interpolates burst properties for N epochs
+
+        Returns: [n_epochs, n_interp_bvars]
 
         Parameters
         ----------
@@ -346,6 +362,13 @@ class BurstFit:
 
     def _get_interp_param(self, key, epoch_idx):
         """Extracts interp param value from full x_dict
+
+        Returns: float
+
+        Parameters
+        ----------
+        key : str
+        epoch_idx : int
         """
         if key in self._epoch_params:
             key = f'{key}{epoch_idx + 1}'
@@ -357,6 +380,13 @@ class BurstFit:
     # ===============================================================
     def _get_y_shifted(self, interp_local, analytic_local):
         """Returns predicted model values (+ uncertainties) shifted to an observer frame
+
+        Returns: [n_epochs, n_bvars]
+
+        Parameters
+        ----------
+        interp_local: [n_epochs, n_interp_bvars]
+        analytic_local: [n_epochs, n_analytic_bvars]
         """
         interp_shifted = np.full_like(interp_local, np.nan, dtype=float)
         analytic_shifted = np.full_like(analytic_local, np.nan, dtype=float)
@@ -385,6 +415,8 @@ class BurstFit:
     def _shift_to_observer(self, values, bvar):
         """Returns burst property shifted to observer frame/units
 
+        Returns: float or [float]
+
         Parameters
         ----------
         values : flt or ndarray
@@ -405,7 +437,7 @@ class BurstFit:
         return shifted
 
     def _get_terms(self):
-        """Get derived terms needed for calculations
+        """Calculate derived terms
         """
         self._terms['mass_nw'] = gravity.mass_from_g(g=self._x_dict['g'],
                                                     r=self._kepler_radius)
@@ -413,8 +445,8 @@ class BurstFit:
         self._terms['mass_ratio'] = self._x_dict['mass'] / self._terms['mass_nw']
 
         self._terms['r_ratio'] = gravity.get_xi(r=self._kepler_radius,
-                                               m=self._terms['mass_nw'],
-                                               phi=self._terms['mass_ratio'])
+                                                m=self._terms['mass_nw'],
+                                                phi=self._terms['mass_ratio'])
 
         self._terms['redshift'] = gravity.redshift_from_xi_phi(
                                                 phi=self._terms['mass_ratio'],
