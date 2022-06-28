@@ -6,7 +6,7 @@ from multiprocessing import Pool
 from emcee import EnsembleSampler, backends
 
 # pyburst
-from multiepoch_mcmc import mcmc, burst_sampler, grid_interpolator
+from multiepoch_mcmc import mcmc, burst_sampler
 
 # =============================================================================
 # Usage:
