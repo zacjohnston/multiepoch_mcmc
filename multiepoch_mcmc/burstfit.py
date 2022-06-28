@@ -273,6 +273,23 @@ class BurstFit:
 
         return interp_local, analytic_local
 
+    def _get_interp_bvars(self, x_interp):
+        """Interpolates burst properties for N epochs
+
+        Returns: [n_epochs, n_interp_bvars]
+
+        Parameters
+        ----------
+        x_interp : 1darray
+            parameters specific to the model (e.g. mdot1, x, z, qb, get_mass)
+        """
+        output = self._grid_interpolator.interpolate(x=x_interp)
+
+        if True in np.isnan(output):
+            raise ZeroLhood
+
+        return output
+
     def _get_analytic_bvars(self, x_epochs):
         """Returns calculated analytic burst properties
 
@@ -326,23 +343,6 @@ class BurstFit:
         out[:, 0] = l_per
         out[:, 1] = out[:, 0] * self._u_fper_frac
         return out
-
-    def _get_interp_bvars(self, x_interp):
-        """Interpolates burst properties for N epochs
-
-        Returns: [n_epochs, n_interp_bvars]
-
-        Parameters
-        ----------
-        x_interp : 1darray
-            parameters specific to the model (e.g. mdot1, x, z, qb, get_mass)
-        """
-        output = self._grid_interpolator.interpolate(x=x_interp)
-
-        if True in np.isnan(output):
-            raise ZeroLhood
-
-        return output
 
     def _get_x_epochs(self):
         """Returns epoch array of coordinates
