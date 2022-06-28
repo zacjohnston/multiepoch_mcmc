@@ -275,9 +275,8 @@ class BurstFit:
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
-        potential = (self.terms['redshift'] - 1) * self._c ** 2 / self.terms['redshift']
         mdot = x_epochs[:, self.interp_keys.index('mdot')]
-        l_per = mdot * self._mdot_edd * potential
+        l_per = mdot * self._mdot_edd * self.terms['potential']
 
         out[:, 0] = l_per
         out[:, 1] = out[:, 0] * self._u_fper_frac
@@ -384,13 +383,7 @@ class BurstFit:
                           'fper': self.terms['mass_ratio'] / self.terms['redshift'],
                           }
 
-        flux_factor = flux_factors.get(bprop)
-        gr_correction = gr_corrections.get(bprop)
-
-        if flux_factor is None:
-            raise ValueError('bprop must be one of (rate, fluence, peak, fper, fedd)')
-
-        shifted = (values * gr_correction) / flux_factor
+        shifted = (values * gr_corrections[bprop]) / flux_factors[bprop]
 
         return shifted
 
@@ -409,6 +402,8 @@ class BurstFit:
         self.terms['redshift'] = gravity.redshift_from_xi_phi(
                                                 phi=self.terms['mass_ratio'],
                                                 xi=self.terms['r_ratio'])
+
+        self.terms['potential'] = -gravity.potential_from_redshift(self.terms['redshift'])
 
     # ===============================================================
     #                      Misc.
