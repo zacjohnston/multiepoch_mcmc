@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $# -ne 4 ]]; then
+if [[ $# -ne 3 ]]; then
   echo -e "\nusage: `basename $0` <MIN_WALKERS> <MAX_WALKERS> <MAX_THREADS>\n"
   exit 0
 fi
