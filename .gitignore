@@ -11,3 +11,4 @@ __pycache__
 *.code-workspace
 *.ods*
 *.pdf
+*.out
