@@ -16,7 +16,7 @@ for i in {0..7}; do
     --ntasks="${N_THREADS}" \
     --export=n_steps="${N_STEPS}",n_walkers="${N_WALKERS}" \
     --job-name="${N_WALKERS}_${N_THREADS}" \
-    --output="${N_WALKERS}_${N_THREADS}.out" \
+    --output="temp/${N_WALKERS}_${N_THREADS}.out" \
     submit_job.sb
 
 	if [ "${N_THREADS}" -eq "${MAX_THREADS}" ]; then
