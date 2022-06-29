@@ -1,15 +1,15 @@
 #!/bin/bash
 
-if [[ $# -ne 3 ]]; then
-  echo -e "\nusage: `basename $0` <MAX_STEPS> <MAX_WALKERS> <MAX_THREADS>\n"
+if [[ $# -ne 4 ]]; then
+  echo -e "\nusage: `basename $0` <MIN_WALKERS> <MAX_WALKERS> <MAX_THREADS>\n"
   exit 0
 fi
 
-MIN_WALKERS=512
-
-MAX_STEPS=${1}
+MIN_WALKERS=${1}
 MAX_WALKERS=${2}
 MAX_THREADS=${3}
+
+MAX_STEPS=160
 
 for i in {0..5}; do
   (( N_WALKERS=MIN_WALKERS*2**i ))
