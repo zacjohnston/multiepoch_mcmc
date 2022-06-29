@@ -25,7 +25,7 @@ fi
 conda activate multiepoch_mcmc
 cd "${MULTIEPOCH_MCMC}/scripts" || exit
 
-python run_mcmc.py ${n_steps} n_walkers=${n_walkers} n_threads="${SLURM_NTASKS}"
+python run_mcmc.py "${n_steps}" n_walkers="${n_walkers}" n_threads="${SLURM_NTASKS}"
 
 
 scontrol show job "${SLURM_JOB_ID}"     ### write job information to output file
