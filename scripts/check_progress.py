@@ -11,11 +11,9 @@ def main(filename):
     filepath = os.path.join(out_path, filename)
 
     print(f'Reading: {os.path.abspath(filepath)}')
-
     sampler = HDFBackend(filepath, read_only=True)
-    n_steps = sampler.shape[0]
 
-    print(f'Steps completed: {n_steps}')
+    print(f'Steps completed: {sampler.iteration}')
 
 
 if __name__ == '__main__':
