@@ -18,8 +18,7 @@ for i in {0..5}; do
   for j in {0..7}; do
     (( N_THREADS=2**j ))
 
-    sbatch --job-name="${MODEL}" \
-      --ntasks="${N_THREADS}" \
+    sbatch --ntasks="${N_THREADS}" \
       --export=n_steps="${N_STEPS}",n_walkers="${N_WALKERS}" \
       --job-name="${N_WALKERS}_${N_THREADS}" \
       --output="temp/${N_WALKERS}_${N_THREADS}.out" \
