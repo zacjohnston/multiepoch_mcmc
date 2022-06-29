@@ -1,26 +1,36 @@
 #!/bin/bash
 
 if [[ $# -ne 3 ]]; then
-  echo -e "\nusage: `basename $0` <N_STEPS> <N_WALKERS> <MAX_THREADS>\n"
+  echo -e "\nusage: `basename $0` <MAX_STEPS> <MAX_WALKERS> <MAX_THREADS>\n"
   exit 0
 fi
 
-N_STEPS=${1}
-N_WALKERS=${2}
+MIN_WALKERS=512
+
+MAX_STEPS=${1}
+MAX_WALKERS=${2}
 MAX_THREADS=${3}
 
-for i in {0..7}; do
-	(( N_THREADS=2**i ))
+for i in {0..5}; do
+  (( N_WALKERS=MIN_WALKERS*2**i ))
+  (( N_STEPS=MAX_STEPS/2**i ))
 
-  sbatch --job-name="${MODEL}" \
-    --ntasks="${N_THREADS}" \
-    --export=n_steps="${N_STEPS}",n_walkers="${N_WALKERS}" \
-    --job-name="${N_WALKERS}_${N_THREADS}" \
-    --output="temp/${N_WALKERS}_${N_THREADS}.out" \
-    submit_job.sb
+  for j in {0..7}; do
+    (( N_THREADS=2**j ))
+    echo "${N_STEPS} steps, ${N_WALKERS} walkers, ${N_THREADS} threads"
+#    sbatch --job-name="${MODEL}" \
+#      --ntasks="${N_THREADS}" \
+#      --export=n_steps="${N_STEPS}",n_walkers="${N_WALKERS}" \
+#      --job-name="${N_WALKERS}_${N_THREADS}" \
+#      --output="temp/${N_WALKERS}_${N_THREADS}.out" \
+#      submit_job.sb
 
-	if [ "${N_THREADS}" -eq "${MAX_THREADS}" ]; then
-		break
-	fi
+    if [ "${N_THREADS}" -eq "${MAX_THREADS}" ]; then
+      break
+    fi
+  done
+
+  if [ "${N_WALKERS}" -eq "${MAX_WALKERS}" ]; then
+    break
+  fi
 done
-
