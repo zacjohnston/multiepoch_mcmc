@@ -441,7 +441,7 @@ class BurstSampler:
         """Calculate derived terms
         """
         self._terms['mass_nw'] = gravity.mass_from_g(g=self._x_dict['g'],
-                                                    r=self._kepler_radius)
+                                                     r=self._kepler_radius)
 
         self._terms['mass_ratio'] = self._x_dict['mass'] / self._terms['mass_nw']
 

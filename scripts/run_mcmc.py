@@ -10,7 +10,7 @@ from multiepoch_mcmc import mcmc, burst_sampler
 
 # =============================================================================
 # Usage:
-# python run_mcmc.py <n_steps> <n_threads> <save_steps>
+# python run_mcmc.py <n_steps>
 # =============================================================================
 
 os.environ["OMP_NUM_THREADS"] = "1"  # recommended for parallel emcee
@@ -33,13 +33,16 @@ def main(n_steps,
     restart_step : int
     progress : bool
     """
-    path = os.path.dirname(__file__)
-    out_path = os.path.join(path, '..', 'output')
-    filepath = os.path.join(out_path, f'sampler_{system}.h5')
-    backend = backends.HDFBackend(filepath)
-
     n_threads = int(n_threads)
     n_walkers = int(n_walkers)
+
+    filename = f'sampler_{system}_{n_steps}s_{n_walkers}w_{n_threads}t.h5'
+
+    path = os.path.dirname(__file__)
+    out_path = os.path.join(path, '..', 'output')
+    filepath = os.path.join(out_path, filename)
+
+    backend = backends.HDFBackend(filepath)
 
     # if restart_step is None:
     restart = False
@@ -95,13 +98,13 @@ if __name__ == "__main__":
                     1. n_steps       : number of mcmc steps to take
                     (2. n_walkers    : number of mcmc walkers)
                     (3. n_threads    : number of threads/cores to use)
-                    (4. restart_step : step to restart from)""")
+                    (4. system       : name of bursting system)""")
         sys.exit(0)
 
     if n_args == min_args:
         main(int(sys.argv[1]))
     else:
-        main(int(sys.argv[1]), **dict(arg.split('=') for arg in sys.argv[2:]))
+        main(int(sys.argv[1]), **dict(arg.split('=') for arg in sys.argv[min_args+1:]))
 
 
 
