@@ -19,7 +19,7 @@ def main(filename):
 
 
 if __name__ == '__main__':
-    req_args = 1
+    req_args = 2
     n_args = len(sys.argv)
 
     if n_args != req_args:
