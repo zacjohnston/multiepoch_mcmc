@@ -51,22 +51,13 @@ def run_sampler(sampler,
         print progress of sampler each step
     """
     t0 = time.time()
-
     result = sampler.run_mcmc(initial_state=pos,
                               nsteps=n_steps,
                               progress=print_progress)
 
+    print('\nDone!')
     t1 = time.time()
-    dtime = t1 - t0
-    time_per_step = dtime / n_steps
-
-    n_walkers = pos.shape[0]
-    n_samples = n_walkers * n_steps
-    time_per_sample = dtime / n_samples
-
-    print(f'Compute time: {dtime:.1f} s ({dtime/3600:.2f} hr)')
-    print(f'Time per step: {time_per_step:.1f} s')
-    print(f'Time per sample: {time_per_sample:.4f} s')
+    print_timing(t0=t0, t1=t1, n_steps=n_steps, n_walkers=pos.shape[0])
 
     return result
 
@@ -91,6 +82,7 @@ def run_sampler_pool(bsampler,
     progress : bool
     """
     backend = open_backend(system=bsampler.system, n_walkers=n_walkers)
+    t0 = time.time()
 
     with Pool(processes=n_threads) as pool:
         sampler = EnsembleSampler(nwalkers=n_walkers,
@@ -102,6 +94,10 @@ def run_sampler_pool(bsampler,
         sampler.run_mcmc(initial_state=pos,
                          nsteps=n_steps,
                          progress=progress)
+
+    print('\nDone!')
+    t1 = time.time()
+    print_timing(t0=t0, t1=t1, n_steps=n_steps, n_walkers=n_walkers)
 
     return sampler
 
@@ -157,3 +153,27 @@ def open_backend(system,
     backend = backends.HDFBackend(filepath)
 
     return backend
+
+
+def print_timing(t0,
+                 t1,
+                 n_steps,
+                 n_walkers):
+    """Print timing info from MCMC run
+
+    Parameters
+    ----------
+    t0 : float
+        start time [s]
+    t1 : float
+        end time
+    n_steps : int
+    n_walkers : int
+    """
+    dt = t1 - t0
+    time_per_step = dt / n_steps
+    time_per_sample = dt / (n_walkers * n_steps)
+
+    print(f'Total compute time: {dt:.0f} s ({dt/3600:.1f} hr)')
+    print(f'Average time per step: {time_per_step:.1f} s')
+    print(f'Average time per sample: {time_per_sample:.4f} s')

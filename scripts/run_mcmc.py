@@ -63,16 +63,6 @@ def main(n_steps,
                           pos=pos,
                           progress=progress)
 
-    print('\nDone!')
-
-    t1 = time.time()
-    dt = t1 - t0
-    time_per_step = dt / n_steps
-    time_per_sample = dt / (n_walkers * n_steps)
-
-    print(f'Total compute time: {dt:.0f} s ({dt/3600:.2f} hr)')
-    print(f'Average time per step: {time_per_step:.1f} s')
-    print(f'Average time per sample: {time_per_sample:.4f} s')
 
 
 if __name__ == "__main__":
