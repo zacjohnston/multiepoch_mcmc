@@ -17,7 +17,7 @@ os.environ["OMP_NUM_THREADS"] = "1"  # recommended for parallel emcee
 
 def main(n_steps,
          n_walkers=1000,
-         n_threads=6,
+         n_threads=4,
          system='gs1826',
          restart=False,
          progress=False):
@@ -36,31 +36,31 @@ def main(n_steps,
 
     n_threads = int(n_threads)
     n_walkers = int(n_walkers)
-    restart = bool_map[restart]
-    progress = bool_map[progress]
+    restart = bool_map[str(restart)]
+    progress = bool_map[str(progress)]
 
     filename = f'sampler_{system}_{n_steps}s_{n_walkers}w_{n_threads}t.h5'
     path = os.path.dirname(__file__)
     out_path = os.path.join(path, '..', 'output')
     filepath = os.path.join(out_path, filename)
 
-    print(f'Output file: {os.path.abspath(filepath)}')
     backend = backends.HDFBackend(filepath)
 
     x0 = [0.086, 0.115, 0.132, 0.702, 0.011, 0.41, 0.2, 0.22, 2.45, 2.1, 6.47, 1.47]
     n_dim = len(x0)
 
-    if restart:
-        print(f'Restarting from step {backend.iteration}')
-        pos = None
-    else:
-        backend.reset(nwalkers=n_walkers, ndim=n_dim)
-        pos = mcmc.seed_walker_positions(x0, n_walkers=n_walkers)
-
     bsampler = burst_sampler.BurstSampler(system=system)
 
     t0 = time.time()
     print(f'\nRunning {n_walkers} walkers for {n_steps} steps using {n_threads} threads')
+    print(f'Output file: {os.path.abspath(filepath)}')
+
+    if restart:
+        print(f'Restarting from step {backend.iteration}\n')
+        pos = None
+    else:
+        backend.reset(nwalkers=n_walkers, ndim=n_dim)
+        pos = mcmc.seed_walker_positions(x0, n_walkers=n_walkers)
 
     with Pool(processes=n_threads) as pool:
         sampler = EnsembleSampler(nwalkers=n_walkers,
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     min_args = 1
     n_args = len(sys.argv)
 
-    if n_args < min_args:
+    if n_args < min_args + 1:
         print(f"""Must provide at least {min_args} parameter(s):
                     1. n_steps       : number of mcmc steps to take
                     (2. n_walkers    : number of mcmc walkers)
