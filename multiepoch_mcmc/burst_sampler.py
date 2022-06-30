@@ -73,11 +73,12 @@ class BurstSampler:
         self._analytic_bvars = self._config['keys']['analytic_bvars']
         
         self._grid_bounds = self._config['grid']['bounds']
+        self.x_start = self._config['grid']['x_start']
+
         self._weights = self._config['lhood']['weights']
         self._u_fper_frac = self._config['lhood']['u_fper_frac']
         self._u_fedd_frac = self._config['lhood']['u_fedd_frac']
         self._priors = self._config['lhood']['priors']
-
         self._obs_table = None
         self.obs_data = None
 
