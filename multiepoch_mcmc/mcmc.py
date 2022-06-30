@@ -63,10 +63,10 @@ def run_sampler(sampler,
 
 
 def run_sampler_pool(bsampler,
-                     pos,
                      n_steps,
                      n_walkers,
                      n_threads,
+                     restart=False,
                      progress=True):
     """Runs parallel MCMC samplers across multiple threads
 
@@ -75,13 +75,21 @@ def run_sampler_pool(bsampler,
     Parameters
     ----------
     bsampler: BurstSampler
-    pos : ndarray
     n_steps : int
     n_walkers : int
     n_threads : int
+    restart : bool
     progress : bool
     """
+    print(f'\nRunning {n_walkers} walkers for {n_steps} steps using {n_threads} threads')
+
     backend = open_backend(system=bsampler.system, n_walkers=n_walkers)
+
+    pos = get_walker_pos(bsampler=bsampler,
+                         backend=backend,
+                         n_walkers=n_walkers,
+                         restart=restart)
+
     t0 = time.time()
 
     with Pool(processes=n_threads) as pool:
@@ -100,6 +108,33 @@ def run_sampler_pool(bsampler,
     print_timing(t0=t0, t1=t1, n_steps=n_steps, n_walkers=n_walkers)
 
     return sampler
+
+
+def get_walker_pos(bsampler,
+                   backend,
+                   n_walkers,
+                   restart):
+    """Returns initial walker positions and configures backend for restart
+
+    Returns: ndarray or None
+        initial walker positions, shape (n_walkers, n_dim)
+
+    Parameters
+    ----------
+    bsampler : BurstSampler
+    backend : HDF5Backend
+    n_walkers : int
+    restart : bool
+    """
+    if restart:
+        print(f'Restarting from step {backend.iteration}\n')
+        pos = None
+    else:
+        backend.reset(nwalkers=n_walkers, ndim=bsampler.n_dim)
+        pos = seed_walker_positions(x_start=bsampler.x_start,
+                                    n_walkers=n_walkers)
+
+    return pos
 
 
 def seed_walker_positions(x_start,
