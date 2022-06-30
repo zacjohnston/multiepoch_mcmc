@@ -46,10 +46,8 @@ def main(n_steps,
 
     backend = backends.HDFBackend(filepath)
 
-    x0 = [0.086, 0.115, 0.132, 0.702, 0.011, 0.41, 0.2, 0.22, 2.45, 2.1, 6.47, 1.47]
-    n_dim = len(x0)
-
     bsampler = burst_sampler.BurstSampler(system=system)
+    n_dim = len(bsampler.params)
 
     t0 = time.time()
     print(f'\nRunning {n_walkers} walkers for {n_steps} steps using {n_threads} threads')
@@ -60,7 +58,7 @@ def main(n_steps,
         pos = None
     else:
         backend.reset(nwalkers=n_walkers, ndim=n_dim)
-        pos = mcmc.seed_walker_positions(x0, n_walkers=n_walkers)
+        pos = mcmc.seed_walker_positions(bsampler.x_start, n_walkers=n_walkers)
 
     with Pool(processes=n_threads) as pool:
         sampler = EnsembleSampler(nwalkers=n_walkers,
