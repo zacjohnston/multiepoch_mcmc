@@ -14,18 +14,23 @@ if [ -z "${MULTIEPOCH_MCMC}" ]; then
   echo "ERROR: Must set environment variable for repo path, e.g.:"
   echo "  > export MULTIEPOCH_MCMC=~/codes/multiepoch_mcmc"
   exit 1
-fi
-
-if [ -z "${n_steps}" ] || [ -z "${n_walkers}" ]; then
+elif [ -z "${n_steps}" ] || [ -z "${n_walkers}" ]; then
   echo "ERROR: Must provide n_steps and n_walkers, e.g.:"
   echo "    > sbatch --export=n_steps=1000,n_walkers=1000 --ntasks=8 submit_job.sb"
   exit 1
+elif [ -z "${restart}" ]; then
+  restart_str="restart=True"
 fi
+
 
 conda activate multiepoch_mcmc
 cd "${MULTIEPOCH_MCMC}/scripts" || exit
 
-python run_mcmc.py "${n_steps}" n_walkers="${n_walkers}" n_threads="${SLURM_NTASKS}" progress=False
+python run_mcmc.py "${n_steps}" \
+  n_walkers="${n_walkers}" \
+  n_threads="${SLURM_NTASKS}" \
+  ${restart_str} \
+  progress=False
 
 
 scontrol show job "${SLURM_JOB_ID}"     ### write job information to output file
