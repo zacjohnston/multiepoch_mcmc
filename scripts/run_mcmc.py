@@ -1,8 +1,5 @@
 import sys
 import os
-import time
-from multiprocessing import Pool
-from emcee import EnsembleSampler, backends
 
 # pyburst
 from multiepoch_mcmc import mcmc, burst_sampler
@@ -32,37 +29,23 @@ def main(n_steps,
     restart : bool
     progress : bool
     """
+    # ===== parse args =====
     bool_map = {'True': True, 'False': False}
-
     n_threads = int(n_threads)
     n_walkers = int(n_walkers)
     restart = bool_map[str(restart)]
     progress = bool_map[str(progress)]
 
+    # ===== Setup burst sampler =====
     bsampler = burst_sampler.BurstSampler(system=system)
-    n_dim = len(bsampler.params)
 
-    print(f'\nRunning {n_walkers} walkers for {n_steps} steps using {n_threads} threads')
-
-    backend = mcmc.open_backend(system=system, n_walkers=n_walkers)
-
-    if restart:
-        print(f'Restarting from step {backend.iteration}\n')
-        pos = None
-    else:
-        backend.reset(nwalkers=n_walkers, ndim=n_dim)
-        pos = mcmc.seed_walker_positions(x_start=bsampler.x_start,
-                                         n_walkers=n_walkers)
-
-    t0 = time.time()
-
+    # ===== Run MCMC simulation =====
     mcmc.run_sampler_pool(bsampler=bsampler,
                           n_walkers=n_walkers,
                           n_threads=n_threads,
                           n_steps=n_steps,
-                          pos=pos,
+                          restart=restart,
                           progress=progress)
-
 
 
 if __name__ == "__main__":
