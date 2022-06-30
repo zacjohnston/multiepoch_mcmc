@@ -20,7 +20,7 @@ def main(n_steps,
          n_threads=4,
          system='gs1826',
          restart=False,
-         progress=False):
+         progress=True):
     """Runs an MCMC simulation using interpolated burst model grid
 
     Parameters
@@ -39,7 +39,7 @@ def main(n_steps,
     restart = bool_map[str(restart)]
     progress = bool_map[str(progress)]
 
-    filename = f'sampler_{system}_{n_steps}s_{n_walkers}w_{n_threads}t.h5'
+    filename = f'sampler_{system}_{n_walkers}w.h5'
     path = os.path.dirname(__file__)
     out_path = os.path.join(path, '..', 'output')
     filepath = os.path.join(out_path, filename)
