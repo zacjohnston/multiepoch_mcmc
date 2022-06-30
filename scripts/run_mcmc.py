@@ -16,7 +16,7 @@ os.environ["OMP_NUM_THREADS"] = "1"  # recommended for parallel emcee
 
 
 def main(n_steps,
-         n_walkers=1000,
+         n_walkers=1024,
          n_threads=4,
          system='gs1826',
          restart=False,
@@ -56,16 +56,12 @@ def main(n_steps,
 
     t0 = time.time()
 
-    with Pool(processes=n_threads) as pool:
-        sampler = EnsembleSampler(nwalkers=n_walkers,
-                                  ndim=n_dim,
-                                  log_prob_fn=bsampler.lhood,
-                                  pool=pool,
-                                  backend=backend)
-
-        sampler.run_mcmc(initial_state=pos,
-                         nsteps=n_steps,
-                         progress=progress)
+    mcmc.run_sampler_pool(bsampler=bsampler,
+                          n_walkers=n_walkers,
+                          n_threads=n_threads,
+                          n_steps=n_steps,
+                          pos=pos,
+                          progress=progress)
 
     print('\nDone!')
 

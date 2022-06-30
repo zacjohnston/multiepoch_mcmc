@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from emcee import EnsembleSampler, backends
+from multiprocessing import Pool
 import time
 
 
@@ -68,6 +69,41 @@ def run_sampler(sampler,
     print(f'Time per sample: {time_per_sample:.4f} s')
 
     return result
+
+
+def run_sampler_pool(bsampler,
+                     pos,
+                     n_steps,
+                     n_walkers,
+                     n_threads,
+                     progress=True):
+    """Runs parallel MCMC samplers across multiple threads
+
+    Returns: EnsembleSampler
+
+    Parameters
+    ----------
+    bsampler: BurstSampler
+    pos : ndarray
+    n_steps : int
+    n_walkers : int
+    n_threads : int
+    progress : bool
+    """
+    backend = open_backend(system=bsampler.system, n_walkers=n_walkers)
+
+    with Pool(processes=n_threads) as pool:
+        sampler = EnsembleSampler(nwalkers=n_walkers,
+                                  ndim=len(bsampler.params),
+                                  log_prob_fn=bsampler.lhood,
+                                  pool=pool,
+                                  backend=backend)
+
+        sampler.run_mcmc(initial_state=pos,
+                         nsteps=n_steps,
+                         progress=progress)
+
+    return sampler
 
 
 def seed_walker_positions(x_start,
