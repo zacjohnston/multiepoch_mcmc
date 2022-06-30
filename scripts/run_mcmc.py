@@ -1,4 +1,3 @@
-import numpy as np
 import sys
 import os
 import time
@@ -20,7 +19,7 @@ def main(n_steps,
          n_walkers=1000,
          n_threads=6,
          system='gs1826',
-         restart_step=None,
+         restart=False,
          progress=False):
     """Runs an MCMC simulation using interpolated burst model grid
 
@@ -30,31 +29,33 @@ def main(n_steps,
     n_walkers : int
     system : str
     n_threads : int
-    restart_step : int
+    restart : bool
     progress : bool
     """
+    bool_map = {'True': True, 'False': False}
+
     n_threads = int(n_threads)
     n_walkers = int(n_walkers)
+    restart = bool_map[restart]
+    progress = bool_map[progress]
 
     filename = f'sampler_{system}_{n_steps}s_{n_walkers}w_{n_threads}t.h5'
-
     path = os.path.dirname(__file__)
     out_path = os.path.join(path, '..', 'output')
     filepath = os.path.join(out_path, filename)
 
+    print(f'Output file: {os.path.abspath(filepath)}')
     backend = backends.HDFBackend(filepath)
 
-    # if restart_step is None:
-    restart = False
-    start = 0
     x0 = [0.086, 0.115, 0.132, 0.702, 0.011, 0.41, 0.2, 0.22, 2.45, 2.1, 6.47, 1.47]
-    pos = mcmc.seed_walker_positions(x0, n_walkers=n_walkers)
-    # else:
-    #     restart = True
-    #     start = int(restart_step)
-    #     chain0 = mcmc_tools.load_chain(source=source, version=version, n_walkers=n_walkers,
-    #                                    n_steps=start)
-    #     pos = chain0[:, -1, :]
+    n_dim = len(x0)
+
+    if restart:
+        print(f'Restarting from step {backend.iteration}')
+        pos = None
+    else:
+        backend.reset(nwalkers=n_walkers, ndim=n_dim)
+        pos = mcmc.seed_walker_positions(x0, n_walkers=n_walkers)
 
     bsampler = burst_sampler.BurstSampler(system=system)
 
@@ -62,8 +63,8 @@ def main(n_steps,
     print(f'\nRunning {n_walkers} walkers for {n_steps} steps using {n_threads} threads')
 
     with Pool(processes=n_threads) as pool:
-        sampler = EnsembleSampler(nwalkers=pos.shape[0],
-                                  ndim=pos.shape[1],
+        sampler = EnsembleSampler(nwalkers=n_walkers,
+                                  ndim=n_dim,
                                   log_prob_fn=bsampler.lhood,
                                   pool=pool,
                                   backend=backend)
@@ -71,11 +72,6 @@ def main(n_steps,
         sampler.run_mcmc(initial_state=pos,
                          nsteps=n_steps,
                          progress=progress)
-
-        # if restart:
-        #     save_chain = np.concatenate([chain0, sampler.chain], 1)
-        # else:
-        #     save_chain = sampler.chain
 
     print('\nDone!')
 
