@@ -6,7 +6,6 @@ import time
 
 def setup_sampler(bsampler,
                   n_walkers,
-                  n_dim,
                   backend=None,
                   pool=None):
     """Initializes MCMC sampler object
@@ -17,13 +16,12 @@ def setup_sampler(bsampler,
     ----------
     bsampler : BurstSampler
     n_walkers : int
-    n_dim : int
     backend : HDFBackend
     pool : multiprocessing.Pool
         used for parallel compute
     """
     sampler = EnsembleSampler(nwalkers=n_walkers,
-                              ndim=n_dim,
+                              ndim=len(bsampler.params),
                               log_prob_fn=bsampler.lhood,
                               backend=backend,
                               pool=pool)
