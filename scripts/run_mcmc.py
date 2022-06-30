@@ -58,7 +58,8 @@ def main(n_steps,
         pos = None
     else:
         backend.reset(nwalkers=n_walkers, ndim=n_dim)
-        pos = mcmc.seed_walker_positions(bsampler.x_start, n_walkers=n_walkers)
+        pos = mcmc.seed_walker_positions(x_start=bsampler.x_start,
+                                         n_walkers=n_walkers)
 
     with Pool(processes=n_threads) as pool:
         sampler = EnsembleSampler(nwalkers=n_walkers,

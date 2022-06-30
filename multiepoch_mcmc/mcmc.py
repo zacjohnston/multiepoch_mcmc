@@ -68,30 +68,31 @@ def run_sampler(sampler,
     return result
 
 
-def seed_walker_positions(x0,
+def seed_walker_positions(x_start,
                           n_walkers,
                           sigma_frac=1e-3):
     """Generates initial MCMC walker positions
 
     Walker positions are randomly distributed within a Gaussian n-ball,
-    centred on a given initial guess `x0`
+    centred on a given initial guess `x_start`
 
-    Returns: [n_walkers, len(x0)]
+    Returns: ndarray
+        shape (n_walkers, n_dim)
 
     Parameters
     ----------
-    x0: [flt]
+    x_start: [flt]
         coordinates of initial guess, matching length and ordering of `params`
     n_walkers: int
         number of mcmc walkers to use
     sigma_frac: flt
         fractional standard deviation of Gaussian n-ball
     """
-    n_dim = len(x0)
+    n_dim = len(x_start)
     pos = []
 
     for _ in range(n_walkers):
         factor = 1 + sigma_frac * np.random.randn(n_dim)
-        pos += [x0 * factor]
+        pos += [x_start * factor]
 
     return np.array(pos)
