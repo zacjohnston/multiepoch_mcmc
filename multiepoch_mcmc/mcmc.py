@@ -4,7 +4,8 @@ import time
 
 
 def setup_sampler(bsampler,
-                  pos,
+                  n_walkers,
+                  n_dim,
                   pool=None):
     """Initializes MCMC sampler object
 
@@ -13,12 +14,13 @@ def setup_sampler(bsampler,
     Parameters
     ----------
     bsampler : BurstSampler
-    pos : [n_walkers, n_dim]
+    n_walkers : int
+    n_dim : int
     pool : multiprocessing.Pool
         used for parallel compute
     """
-    sampler = EnsembleSampler(nwalkers=pos.shape[0],
-                              ndim=pos.shape[1],
+    sampler = EnsembleSampler(nwalkers=n_walkers,
+                              ndim=n_dim,
                               log_prob_fn=bsampler.lhood,
                               pool=pool)
     return sampler
