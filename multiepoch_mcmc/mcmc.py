@@ -1,11 +1,13 @@
+import os
 import numpy as np
-from emcee import EnsembleSampler
+from emcee import EnsembleSampler, backends
 import time
 
 
 def setup_sampler(bsampler,
                   n_walkers,
                   n_dim,
+                  backend=None,
                   pool=None):
     """Initializes MCMC sampler object
 
@@ -16,12 +18,14 @@ def setup_sampler(bsampler,
     bsampler : BurstSampler
     n_walkers : int
     n_dim : int
+    backend : HDFBackend
     pool : multiprocessing.Pool
         used for parallel compute
     """
     sampler = EnsembleSampler(nwalkers=n_walkers,
                               ndim=n_dim,
                               log_prob_fn=bsampler.lhood,
+                              backend=backend,
                               pool=pool)
     return sampler
 
@@ -96,3 +100,26 @@ def seed_walker_positions(x_start,
         pos += [x_start * factor]
 
     return np.array(pos)
+
+
+def open_backend(system,
+                 n_walkers):
+    """Returns sampler output file for reading/writing
+
+    Returns HDFBackend
+
+    Parameters
+    ----------
+    system : str
+    n_walkers : int
+    """
+    filename = f'sampler_{system}_{n_walkers}w.h5'
+    path = os.path.dirname(__file__)
+    out_path = os.path.join(path, '..', 'output')
+
+    filepath = os.path.join(out_path, filename)
+    print(f'Output file: {os.path.abspath(filepath)}')
+
+    backend = backends.HDFBackend(filepath)
+
+    return backend

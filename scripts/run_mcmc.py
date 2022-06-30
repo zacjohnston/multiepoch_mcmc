@@ -39,19 +39,12 @@ def main(n_steps,
     restart = bool_map[str(restart)]
     progress = bool_map[str(progress)]
 
-    filename = f'sampler_{system}_{n_walkers}w.h5'
-    path = os.path.dirname(__file__)
-    out_path = os.path.join(path, '..', 'output')
-    filepath = os.path.join(out_path, filename)
-
-    backend = backends.HDFBackend(filepath)
-
     bsampler = burst_sampler.BurstSampler(system=system)
     n_dim = len(bsampler.params)
 
-    t0 = time.time()
     print(f'\nRunning {n_walkers} walkers for {n_steps} steps using {n_threads} threads')
-    print(f'Output file: {os.path.abspath(filepath)}')
+
+    backend = mcmc.open_backend(system=system, n_walkers=n_walkers)
 
     if restart:
         print(f'Restarting from step {backend.iteration}\n')
@@ -60,6 +53,8 @@ def main(n_steps,
         backend.reset(nwalkers=n_walkers, ndim=n_dim)
         pos = mcmc.seed_walker_positions(x_start=bsampler.x_start,
                                          n_walkers=n_walkers)
+
+    t0 = time.time()
 
     with Pool(processes=n_threads) as pool:
         sampler = EnsembleSampler(nwalkers=n_walkers,
