@@ -150,10 +150,7 @@ class BurstSampler:
         except ZeroLhood:
             return self._zero_lhood
 
-        try:
-            self._get_terms()
-        except ZeroLhood:
-            return self._zero_lhood
+        self._get_terms()
 
         # ===== Interpolate + calculate local burst properties =====
         try:
