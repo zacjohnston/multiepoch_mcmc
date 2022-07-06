@@ -163,7 +163,7 @@ class BurstSampler:
         return lhood
 
     def lnprior(self, x):
-        """Return log-likelihood of prior
+        """Return prior log-likelihood of sample
 
         Returns: flt
 
