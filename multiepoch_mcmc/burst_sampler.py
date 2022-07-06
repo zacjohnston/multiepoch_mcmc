@@ -84,6 +84,7 @@ class BurstSampler:
         self.obs_data = None
 
         # dynamic variables
+        self._x = None
         self._x_dict = {}
         self._terms = {}
         self._flux_factors = {}
@@ -142,7 +143,8 @@ class BurstSampler:
         x : 1Darray
             sample coordinates (must exactly match `params` length and ordering)
         """
-        self._get_x_dict(x=x)
+        self._x = x
+        self._get_x_dict()
 
         # ===== Get prior likelihoods =====
         try:
@@ -253,7 +255,8 @@ class BurstSampler:
         x : 1Darray
             sample coordinates
         """
-        self._get_x_dict(x=x)
+        self._x = x
+        self._get_x_dict()
         self._get_terms()
 
         interp_local, analytic_local = self._get_model_local()
@@ -401,16 +404,16 @@ class BurstSampler:
             i0 = 2 * i
             i1 = 2 * (i + 1)
             interp_shifted[:, i0:i1] = self._shift_to_observer(
-                values=interp_local[:, i0:i1],
-                bvar=bvar)
+                                                 values=interp_local[:, i0:i1],
+                                                 bvar=bvar)
 
         # ==== shift analytic bvars ====
         for i, bvar in enumerate(self._analytic_bvars):
             i0 = 2 * i
             i1 = 2 * (i + 1)
             analytic_shifted[:, i0:i1] = self._shift_to_observer(
-                values=analytic_local[:, i0:i1],
-                bvar=bvar)
+                                                values=analytic_local[:, i0:i1],
+                                                bvar=bvar)
 
         y_shifted = np.concatenate([interp_shifted, analytic_shifted], axis=1)
 
@@ -478,15 +481,8 @@ class BurstSampler:
     # ===============================================================
     #                      Misc.
     # ===============================================================
-    def _get_x_dict(self, x):
-        """Returns sample coordinates as dictionary
-
-        Returns: {param: value}
-
-        Parameters
-        ----------
-        x : 1Darray
-            coordinates of sample
+    def _get_x_dict(self):
+        """Converts sample coordinates to dictionary
         """
         for i, key in enumerate(self.params):
-            self._x_dict[key] = x[i]
+            self._x_dict[key] = self._x[i]
