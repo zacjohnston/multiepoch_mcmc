@@ -312,11 +312,8 @@ class BurstSampler:
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
-        l_edd = accretion.edd_lum_newt(m_nw=self._terms['mass_nw'],
-                                       x=self._x_dict['x'])
-
-        out[:, 0] = l_edd
-        out[:, 1] = l_edd * self._u_fedd_frac
+        out[:, 0] = self._terms['lum_edd']
+        out[:, 1] = self._terms['lum_edd'] * self._u_fedd_frac
 
         return out
 
@@ -350,8 +347,7 @@ class BurstSampler:
 
         for i in range(self._n_epochs):
             for j, key in enumerate(self._interp_params):
-                x_interp[i, j] = self._get_interp_param(key=key,
-                                                        epoch_idx=i)
+                x_interp[i, j] = self._get_interp_param(key=key, epoch_idx=i)
 
         return x_interp
 
@@ -427,6 +423,9 @@ class BurstSampler:
         self._terms['redshift'] = gravity.redshift_from_xi_phi(
                                                 phi=self._terms['mass_ratio'],
                                                 xi=self._terms['r_ratio'])
+
+        self._terms['lum_edd'] = accretion.edd_lum_newt(m_nw=self._terms['mass_nw'],
+                                                        x=self._x_dict['x'])
 
         self._terms['potential'] = -gravity.potential_from_redshift(self._terms['redshift'])
 
