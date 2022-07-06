@@ -135,7 +135,7 @@ class BurstSampler:
             raise KeyError(f'epoch(s) not found in obs_data table')
 
     # ===============================================================
-    #                      Likelihood Sampling
+    #                      Likelihoods
     # ===============================================================
     def lhood(self, x):
         """Returns log-likelihood for given coordinate
@@ -147,15 +147,14 @@ class BurstSampler:
         x : 1Darray
             sample coordinates (must exactly match `params` length and ordering)
         """
-        self._x = x
-        self._get_x_dict()
-
-        # ===== Get prior likelihoods =====
+        # ===== Prior likelihood =====
         try:
             lp = self.lnprior(x=x)
         except ZeroLhood:
             return self._zero_lhood
 
+        self._x = x
+        self._get_x_dict()
         self._get_terms()
 
         # ===== Interpolate + calculate local burst properties =====
@@ -189,8 +188,8 @@ class BurstSampler:
             raise ZeroLhood
 
         prior_lhood = 0.0
-        for key, val in self._x_dict.items():
-            prior_lhood += np.log(self._priors[key](val))
+        for i, param in enumerate(self.params):
+            prior_lhood += np.log(self._priors[param](x[i]))
 
         return prior_lhood
 
@@ -243,10 +242,11 @@ class BurstSampler:
 
         return lh.sum()
 
+    # ===============================================================
+    #                      Burst Sampling
+    # ===============================================================
     def sample(self, x):
         """Returns the predicted observables for given coordinates
-
-        Effectively performs lhood() without the likelihood calculations
 
         Returns: [n_epochs, n_bvars]
 
@@ -260,14 +260,10 @@ class BurstSampler:
         self._get_terms()
 
         self._get_model_local()
-
         y_shifted = self._get_y_shifted()
 
         return y_shifted
 
-    # ===============================================================
-    #                      Burst Sampling
-    # ===============================================================
     def _get_model_local(self):
         """Calculates model values for given coordinates
 
