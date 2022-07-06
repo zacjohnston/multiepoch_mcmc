@@ -143,7 +143,10 @@ class BurstSampler:
             sample coordinates (must exactly match `params` length and ordering)
         """
         self._get_x_dict(x=x)
-        self._get_terms()
+        try:
+            self._get_terms()
+        except ZeroLhood:
+            return self._zero_lhood
 
         # ===== Get prior likelihoods =====
         try:
@@ -442,13 +445,13 @@ class BurstSampler:
     def _get_terms(self):
         """Calculate derived terms
         """
-        self._terms['mass_nw'] = gravity.mass_from_g(g=self._x_dict['g'],
-                                                     r=self._kepler_radius)
+        self._terms['mass_nw'] = gravity.mass_from_g(g_nw=self._x_dict['g'],
+                                                     r_nw=self._kepler_radius)
 
         self._terms['mass_ratio'] = self._x_dict['mass'] / self._terms['mass_nw']
 
-        self._terms['r_ratio'] = gravity.get_xi(r=self._kepler_radius,
-                                                m=self._terms['mass_nw'],
+        self._terms['r_ratio'] = gravity.get_xi(r_nw=self._kepler_radius,
+                                                m_nw=self._terms['mass_nw'],
                                                 phi=self._terms['mass_ratio'])
 
         self._terms['redshift'] = gravity.redshift_from_xi_phi(
