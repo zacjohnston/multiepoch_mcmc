@@ -88,6 +88,9 @@ class BurstSampler:
         self._x_dict = {}
         self._terms = {}
         self._flux_factors = {}
+        self._interp_local = None
+        self._analytic_local = None
+        self._y_shifted = None
 
         self._unpack_obs_data()
 
@@ -156,13 +159,12 @@ class BurstSampler:
 
         # ===== Interpolate + calculate local burst properties =====
         try:
-            interp_local, analytic_local = self._get_model_local()
+            self._get_model_local()
         except ZeroLhood:
             return self._zero_lhood
 
         # ===== Shift to observable quantities =====
-        y_shifted = self._get_y_shifted(interp_local=interp_local,
-                                        analytic_local=analytic_local)
+        y_shifted = self._get_y_shifted()
 
         # ===== Evaluate likelihood against observed data =====
         lh = self.compare(y_shifted)
@@ -259,10 +261,9 @@ class BurstSampler:
         self._get_x_dict()
         self._get_terms()
 
-        interp_local, analytic_local = self._get_model_local()
+        self._get_model_local()
 
-        y_shifted = self._get_y_shifted(interp_local=interp_local,
-                                        analytic_local=analytic_local)
+        y_shifted = self._get_y_shifted()
 
         return y_shifted
 
@@ -275,10 +276,8 @@ class BurstSampler:
         Returns: [n_epochs, n_interp_bvars], [n_epochs, n_analytic_bvars]
         """
         x_interp = self._get_x_interp()
-        interp_local = self._get_interp_bvars(x_interp=x_interp)
-        analytic_local = self._get_analytic_bvars(x_interp=x_interp)
-
-        return interp_local, analytic_local
+        self._interp_local = self._get_interp_bvars(x_interp=x_interp)
+        self._analytic_local = self._get_analytic_bvars(x_interp=x_interp)
 
     def _get_interp_bvars(self, x_interp):
         """Interpolates burst properties for N epochs
@@ -385,18 +384,13 @@ class BurstSampler:
     # ===============================================================
     #                      Conversions
     # ===============================================================
-    def _get_y_shifted(self, interp_local, analytic_local):
+    def _get_y_shifted(self):
         """Returns predicted model values (+ uncertainties) shifted to an observer frame
 
         Returns: [n_epochs, n_bvars]
-
-        Parameters
-        ----------
-        interp_local: [n_epochs, n_interp_bvars]
-        analytic_local: [n_epochs, n_analytic_bvars]
         """
-        interp_shifted = np.full_like(interp_local, np.nan, dtype=float)
-        analytic_shifted = np.full_like(analytic_local, np.nan, dtype=float)
+        interp_shifted = np.full_like(self._interp_local, np.nan, dtype=float)
+        analytic_shifted = np.full_like(self._analytic_local, np.nan, dtype=float)
 
         # ==== shift interpolated bvars ====
         # TODO: concatenate bvar arrays and handle together
@@ -404,7 +398,7 @@ class BurstSampler:
             i0 = 2 * i
             i1 = 2 * (i + 1)
             interp_shifted[:, i0:i1] = self._shift_to_observer(
-                                                 values=interp_local[:, i0:i1],
+                                                 values=self._interp_local[:, i0:i1],
                                                  bvar=bvar)
 
         # ==== shift analytic bvars ====
@@ -412,7 +406,7 @@ class BurstSampler:
             i0 = 2 * i
             i1 = 2 * (i + 1)
             analytic_shifted[:, i0:i1] = self._shift_to_observer(
-                                                values=analytic_local[:, i0:i1],
+                                                values=self._analytic_local[:, i0:i1],
                                                 bvar=bvar)
 
         y_shifted = np.concatenate([interp_shifted, analytic_shifted], axis=1)
