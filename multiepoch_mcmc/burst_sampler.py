@@ -143,14 +143,15 @@ class BurstSampler:
             sample coordinates (must exactly match `params` length and ordering)
         """
         self._get_x_dict(x=x)
-        try:
-            self._get_terms()
-        except ZeroLhood:
-            return self._zero_lhood
 
         # ===== Get prior likelihoods =====
         try:
             lp = self.lnprior(x=x)
+        except ZeroLhood:
+            return self._zero_lhood
+
+        try:
+            self._get_terms()
         except ZeroLhood:
             return self._zero_lhood
 
@@ -323,7 +324,7 @@ class BurstSampler:
         """
         out = np.full([self._n_epochs, 2], np.nan, dtype=float)
 
-        l_edd = accretion.edd_lum_newt(mass=self._terms['mass_nw'],
+        l_edd = accretion.edd_lum_newt(m_nw=self._terms['mass_nw'],
                                        x=self._x_dict['x'])
 
         out[:, 0] = l_edd
