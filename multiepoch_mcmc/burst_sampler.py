@@ -45,7 +45,6 @@ class BurstSampler:
     """
     _c = const.c.to(u.cm / u.s).value                       # speed of light
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
-    _kepler_radius = 10                                     # NS radius used in kepler
     _kpc_to_cm = u.kpc.to(u.cm)
     _zero_lhood = -np.inf
 
@@ -75,6 +74,7 @@ class BurstSampler:
         
         self._grid_bounds = self._config['grid']['bounds']
         self.x_start = self._config['grid']['x_start']
+        self._kepler_radius = self._config['grid']['kepler_radius']
 
         self._weights = self._config['lhood']['weights']
         self._u_fper_frac = self._config['lhood']['u_fper_frac']
