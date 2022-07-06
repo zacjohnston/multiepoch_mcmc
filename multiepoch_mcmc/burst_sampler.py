@@ -90,6 +90,7 @@ class BurstSampler:
         self._flux_factors = {}
         self._interp_local = None
         self._analytic_local = None
+        self._y_local = None
         self._y_shifted = None
 
         self._unpack_obs_data()
@@ -273,8 +274,11 @@ class BurstSampler:
         Returns: [n_epochs, n_interp_bvars], [n_epochs, n_analytic_bvars]
         """
         x_interp = self._get_x_interp()
-        self._interp_local = self._get_interp_bvars(x_interp=x_interp)
-        self._analytic_local = self._get_analytic_bvars(x_interp=x_interp)
+
+        interp_local = self._get_interp_bvars(x_interp=x_interp)
+        analytic_local = self._get_analytic_bvars(x_interp=x_interp)
+
+        self._y_local = np.concatenate([interp_local, analytic_local], axis=1)
 
     def _get_interp_bvars(self, x_interp):
         """Interpolates burst properties for N epochs
@@ -386,27 +390,13 @@ class BurstSampler:
 
         Returns: [n_epochs, n_bvars]
         """
-        interp_shifted = np.full_like(self._interp_local, np.nan, dtype=float)
-        analytic_shifted = np.full_like(self._analytic_local, np.nan, dtype=float)
+        y_shifted = np.full([self._n_epochs, 2*len(self.bvars)], np.nan, dtype=float)
 
-        # ==== shift interpolated bvars ====
-        # TODO: concatenate bvar arrays and handle together
-        for i, bvar in enumerate(self._interp_bvars):
+        for i, bvar in enumerate(self.bvars):
             i0 = 2 * i
-            i1 = 2 * (i + 1)
-            interp_shifted[:, i0:i1] = self._shift_to_observer(
-                                                 values=self._interp_local[:, i0:i1],
-                                                 bvar=bvar)
-
-        # ==== shift analytic bvars ====
-        for i, bvar in enumerate(self._analytic_bvars):
-            i0 = 2 * i
-            i1 = 2 * (i + 1)
-            analytic_shifted[:, i0:i1] = self._shift_to_observer(
-                                                values=self._analytic_local[:, i0:i1],
-                                                bvar=bvar)
-
-        y_shifted = np.concatenate([interp_shifted, analytic_shifted], axis=1)
+            i1 = i0 + 2
+            y_shifted[:, i0:i1] = self._shift_to_observer(values=self._y_local[:, i0:i1],
+                                                          bvar=bvar)
 
         return y_shifted
 
