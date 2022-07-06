@@ -158,10 +158,7 @@ class BurstSampler:
         self._get_terms()
 
         # ===== Interpolate + calculate local burst properties =====
-        try:
-            self._get_model_local()
-        except ZeroLhood:
-            return self._zero_lhood
+        self._get_model_local()
 
         # ===== Shift to observable quantities =====
         y_shifted = self._get_y_shifted()
@@ -292,7 +289,7 @@ class BurstSampler:
         output = self._grid_interpolator.interpolate(x=x_interp)
 
         if True in np.isnan(output):
-            raise ZeroLhood
+            raise ValueError('Sample is outside of model grid')
 
         return output
 
