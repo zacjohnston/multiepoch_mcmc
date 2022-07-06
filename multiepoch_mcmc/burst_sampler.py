@@ -149,19 +149,12 @@ class BurstSampler:
         """
         # ===== Prior likelihood =====
         try:
-            lp = self.lnprior(x=x)
+            lp = self.lnprior(x)
         except ZeroLhood:
             return self._zero_lhood
 
-        self._x = x
-        self._get_x_dict()
-        self._get_terms()
-
-        # ===== Interpolate + calculate local burst properties =====
-        self._get_model_local()
-
-        # ===== Shift to observable quantities =====
-        y_shifted = self._get_y_shifted()
+        # ===== Sample burst variables =====
+        y_shifted = self.sample(x)
 
         # ===== Evaluate likelihood against observed data =====
         lh = self.compare(y_shifted)
