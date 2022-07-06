@@ -149,9 +149,7 @@ def get_radius(g_gr, redshift):
         (1+z) factor
     """
     z = redshift - 1
-    g_gr *= g_to_km
-
-    r_gr = (c ** 2 * z * (z + 2)) / (2 * g_gr * redshift)
+    r_gr = (c ** 2 * z * (z + 2)) / (2 * g_gr * g_to_km * redshift)
 
     return r_gr
 
@@ -168,9 +166,7 @@ def get_mass(g_gr, redshift):
         (1+z) factor
     """
     z = redshift - 1
-    g_gr *= g_to_km
-
-    m_gr = (c**4 * z**2 * (z + 2)**2) / (4 * G * g_gr * redshift**3)
+    m_gr = (c**4 * z**2 * (z + 2)**2) / (4 * G * g_gr * g_to_km * redshift**3)
 
     return m_gr
 
@@ -248,8 +244,7 @@ def mass_from_g(g_nw, r_nw):
     r_nw : float
         Newtonian radius [km]
     """
-    g_nw *= g_to_km
-    m_nw = g_nw * r_nw**2 / G
+    m_nw = g_nw * g_to_km * r_nw**2 / G
 
     return m_nw
 
