@@ -31,6 +31,10 @@ def get_redshift(r_gr, m_gr):
         GR mass [Msun]
     """
     zeta = get_zeta(r=r_gr, m=m_gr)
+
+    if zeta >= 0.5:
+        raise ValueError('Mass and radius violate causality')
+
     redshift = 1 / np.sqrt(1 - 2*zeta)
 
     return redshift
@@ -89,7 +93,7 @@ def get_xi(r_nw, m_nw, phi):
 
     b = (9 * zeta**2 * phi**4 + np.sqrt(3) * phi**3 * np.sqrt(16 + 27 * zeta**4 * phi**2))**(1/3)
     a = (2 / 9)**(1 / 3) * (b**2 / phi**2 - 2 * 6**(1 / 3)) / (b * zeta**2)
-
+    
     xi = (zeta * phi / 2) * (1 + np.sqrt(1 - a) + np.sqrt(2 + a + 2 / np.sqrt(1 - a)))
 
     return xi
