@@ -91,7 +91,6 @@ class BurstSampler:
         self._interp_local = None
         self._analytic_local = None
         self._y_local = None
-        self._y_shifted = None
 
         self._unpack_obs_data()
 
@@ -264,12 +263,12 @@ class BurstSampler:
         """
         x_interp = self._get_x_interp()
 
-        interp_local = self._get_interp_bvars(x_interp=x_interp)
+        interp_local = self._interpolate(x_interp=x_interp)
         analytic_local = self._get_analytic_bvars(x_interp=x_interp)
 
         self._y_local = np.concatenate([interp_local, analytic_local], axis=1)
 
-    def _get_interp_bvars(self, x_interp):
+    def _interpolate(self, x_interp):
         """Interpolates burst properties for N epochs
 
         Returns: [n_epochs, n_interp_bvars]
