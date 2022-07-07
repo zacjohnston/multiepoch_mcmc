@@ -95,7 +95,8 @@ class BurstSampler:
 
         self._grid_interpolator = GridInterpolator(file=self._config['interp']['file'],
                                                    params=self._interp_params,
-                                                   bvars=self._config['interp']['bvars'])
+                                                   bvars=self._config['interp']['bvars'],
+                                                   reconstruct=False)
 
     # ===============================================================
     #                      Setup
