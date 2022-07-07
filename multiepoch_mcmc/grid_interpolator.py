@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import LinearNDInterpolator
 import time
+import pickle
 
 
 class GridInterpolator:
@@ -42,10 +43,10 @@ class GridInterpolator:
             list of output burst variables
         """
         path = os.path.dirname(__file__)
-        filepath = os.path.join(path, '..', 'data', 'model_grid', file)
+        gridpath = os.path.join(path, '..', 'data', 'model_grid', file)
 
         self.file = file
-        self._filepath = os.path.abspath(filepath)
+        self._gridpath = os.path.abspath(gridpath)
 
         self.params = params
         self.bvars = bvars
@@ -73,8 +74,8 @@ class GridInterpolator:
     def _load_grid(self):
         """Loads model grid table from file
         """
-        print(f'Loading grid: {self._filepath}\n')
-        self.grid = pd.read_csv(self._filepath, delim_whitespace=True)
+        print(f'Loading grid: {self._gridpath}\n')
+        self.grid = pd.read_csv(self._gridpath, delim_whitespace=True)
 
         print('Grid parameters\n' + 15*'-')
         for p in self.params:
