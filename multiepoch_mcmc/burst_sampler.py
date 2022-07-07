@@ -69,6 +69,7 @@ class BurstSampler:
         self.n_dim = len(self.params)
 
         self.bvars = self._config['keys']['bvars']
+        self._interp_bvars = self._config['keys']['interp_bvars']
         self._analytic_bvars = self._config['keys']['analytic_bvars']
 
         self._grid_bounds = self._config['grid']['bounds']
@@ -87,9 +88,9 @@ class BurstSampler:
         self._x_epoch = np.empty((self._n_epochs, len(self._epoch_params)))
         self._terms = {}
         self._flux_factors = {}
-        self._interp_local = None
+        self._interp_local = np.empty([self._n_epochs, 2*len(self._interp_bvars)])
         self._analytic_local = np.empty([self._n_epochs, 2*len(self._analytic_bvars)])
-        self._y_local = None
+        self._y_local = np.empty([self._n_epochs, 2*len(self.bvars)])
 
         self._unpack_obs_data()
 
@@ -262,31 +263,30 @@ class BurstSampler:
         Returns: [n_epochs, n_interp_bvars], [n_epochs, n_analytic_bvars]
         """
         self._get_x_epoch()
-        interp_local = self._interpolate()
+        self._interpolate()
         self._get_analytic()
 
-        self._y_local = np.concatenate([interp_local, self._analytic_local], axis=1)
+        self._y_local = np.concatenate([self._interp_local, self._analytic_local], axis=1)
 
     def _get_x_epoch(self):
-        """Reshapes sample coordinates into epoch array
-
-        Returns: [n_epochs, n_interp_params]
+        """Reshapes sample coordinates into epoch array: [n_epochs, n_interp_params]
         """
         for i in range(self._n_epochs):
             for j, key in enumerate(self._epoch_params):
-                self._x_epoch[i, j] = self._get_interp_param(key=key, epoch_idx=i)
+                if key in self._epoch_unique:
+                    key = f'{key}{i+1}'
+
+                self._x_epoch[i, j] = self._x_dict[key]
 
     def _interpolate(self):
         """Interpolates burst properties for N epochs
 
         Returns: [n_epochs, n_interp_bvars]
         """
-        output = self._grid_interpolator.interpolate(x=self._x_epoch)
+        self._interp_local = self._grid_interpolator.interpolate(x=self._x_epoch)
 
-        if True in np.isnan(output):
+        if True in np.isnan(self._interp_local):
             raise ValueError('Sample is outside of model grid')
-
-        return output
 
     def _get_analytic(self):
         """Calculates analytic burst properties
@@ -310,21 +310,6 @@ class BurstSampler:
         l_per = mdot * self._mdot_edd * self._terms['potential']
 
         return l_per
-
-    def _get_interp_param(self, key, epoch_idx):
-        """Extracts interp param value from full x_dict
-
-        Returns: float
-
-        Parameters
-        ----------
-        key : str
-        epoch_idx : int
-        """
-        if key in self._epoch_unique:
-            key = f'{key}{epoch_idx + 1}'
-
-        return self._x_dict[key]
 
     # ===============================================================
     #                      Conversions
