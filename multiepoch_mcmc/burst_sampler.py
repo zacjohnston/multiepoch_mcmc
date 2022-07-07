@@ -43,7 +43,7 @@ class BurstSampler:
     lnprior(x)
         Returns prior likelihoods for given sample coordinates
     """
-    _c = const.c.to(u.cm / u.s).value                       # speed of light
+    _c = const.c.to(u.cm / u.s).value  # speed of light
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)  # eddington accretion rate
     _kpc_to_cm = u.kpc.to(u.cm)
     _zero_lhood = -np.inf
@@ -70,7 +70,7 @@ class BurstSampler:
 
         self.bvars = self._config['keys']['bvars']
         self._analytic_bvars = self._config['keys']['analytic_bvars']
-        
+
         self._grid_bounds = self._config['grid']['bounds']
         self.x_start = self._config['grid']['x_start']
         self._kepler_radius = self._config['grid']['kepler_radius']
@@ -294,28 +294,21 @@ class BurstSampler:
         ----------
         x_interp : [n_epochs, n_analytic_params]
         """
-        function_map = {'fper': self._get_fper, 'fedd': self._get_fedd}
-        analytic = np.full([self._n_epochs, 2*len(self._analytic_bvars)],
-                           np.nan,
-                           dtype=float)
+        output = np.full([self._n_epochs, 2*len(self._analytic_bvars)],
+                         np.nan, dtype=float)
 
+        idxs = {}
         for i, bvar in enumerate(self._analytic_bvars):
-            analytic[:, 2*i: 2*(i+1)] = function_map[bvar](x_interp)
+            idxs[bvar] = i
 
-        return analytic
+        # ----------------
+        output[:, 2*idxs['fper']] = self._get_fper(x_interp)
+        output[:, 2*idxs['fedd']] = self._terms['lum_edd']
 
-    def _get_fedd(self, x_interp):
-        """Returns Eddington flux array (n_epochs, 2)
-            Note: Actually luminosity, as this is the local value
+        output[:, 2*idxs['fper']+1] = output[:, 2*idxs['fper']] * self._u_fper_frac
+        output[:, 2*idxs['fedd']+1] = output[:, 2*idxs['fedd']] * self._u_fedd_frac
 
-        Returns: [n_epochs, float]
-        """
-        out = np.full([self._n_epochs, 2], np.nan, dtype=float)
-
-        out[:, 0] = self._terms['lum_edd']
-        out[:, 1] = self._terms['lum_edd'] * self._u_fedd_frac
-
-        return out
+        return output
 
     def _get_fper(self, x_interp):
         """Returns persistent accretion flux array (n_epochs, 2)
@@ -327,14 +320,10 @@ class BurstSampler:
         ----------
         x_interp : [n_epochs, n_interp_params]
         """
-        out = np.full([self._n_epochs, 2], np.nan, dtype=float)
-
         mdot = x_interp[:, self._interp_params.index('mdot')]
         l_per = mdot * self._mdot_edd * self._terms['potential']
 
-        out[:, 0] = l_per
-        out[:, 1] = out[:, 0] * self._u_fper_frac
-        return out
+        return l_per
 
     def _get_x_interp(self):
         """Returns epoch array of coordinates
