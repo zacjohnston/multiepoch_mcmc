@@ -88,7 +88,7 @@ class BurstSampler:
         self._terms = {}
         self._flux_factors = {}
         self._interp_local = None
-        self._analytic_local = None
+        self._analytic_local = np.empty([self._n_epochs, 2*len(self._analytic_bvars)])
         self._y_local = None
 
         self._unpack_obs_data()
@@ -263,9 +263,9 @@ class BurstSampler:
         """
         self._get_x_epoch()
         interp_local = self._interpolate()
-        analytic_local = self._get_analytic()
+        self._get_analytic()
 
-        self._y_local = np.concatenate([interp_local, analytic_local], axis=1)
+        self._y_local = np.concatenate([interp_local, self._analytic_local], axis=1)
 
     def _get_x_epoch(self):
         """Reshapes sample coordinates into epoch array
@@ -289,22 +289,16 @@ class BurstSampler:
         return output
 
     def _get_analytic(self):
-        """Returns calculated analytic burst properties
-
-        Returns: [n_epochs, n_analytic_bvars]
+        """Calculates analytic burst properties
         """
-        output = np.empty([self._n_epochs, 2*len(self._analytic_bvars)])
-
         analytic = {'fper': self._get_fper(),
                     'fedd': self._terms['lum_edd'],
                     }
 
         for i, bvar in enumerate(self._analytic_bvars):
             idx = 2 * i
-            output[:, idx] = analytic[bvar]
-            output[:, idx+1] = output[:, idx] * self._u_frac[bvar]
-
-        return output
+            self._analytic_local[:, idx] = analytic[bvar]
+            self._analytic_local[:, idx+1] = analytic[bvar] * self._u_frac[bvar]
 
     def _get_fper(self):
         """Returns persistent accretion flux array
