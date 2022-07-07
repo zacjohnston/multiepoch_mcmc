@@ -267,6 +267,19 @@ class BurstSampler:
 
         self._y_local = np.concatenate([interp_local, analytic_local], axis=1)
 
+    def _get_x_epoch(self):
+        """Reshapes sample coordinates into epoch array
+
+        Returns: [n_epochs, n_interp_params]
+        """
+        x_epoch = np.empty((self._n_epochs, len(self._epoch_params)))
+
+        for i in range(self._n_epochs):
+            for j, key in enumerate(self._epoch_params):
+                x_epoch[i, j] = self._get_interp_param(key=key, epoch_idx=i)
+
+        return x_epoch
+
     def _interpolate(self, x_epoch):
         """Interpolates burst properties for N epochs
 
@@ -320,19 +333,6 @@ class BurstSampler:
         l_per = mdot * self._mdot_edd * self._terms['potential']
 
         return l_per
-
-    def _get_x_epoch(self):
-        """Reshapes sample coordinates into epoch array
-
-        Returns: [n_epochs, n_interp_params]
-        """
-        x_epoch = np.empty((self._n_epochs, len(self._epoch_params)))
-
-        for i in range(self._n_epochs):
-            for j, key in enumerate(self._epoch_params):
-                x_epoch[i, j] = self._get_interp_param(key=key, epoch_idx=i)
-
-        return x_epoch
 
     def _get_interp_param(self, key, epoch_idx):
         """Extracts interp param value from full x_dict
