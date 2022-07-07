@@ -264,7 +264,7 @@ class BurstSampler:
         x_interp = self._get_x_interp()
 
         interp_local = self._interpolate(x_interp=x_interp)
-        analytic_local = self._get_analytic_bvars(x_interp=x_interp)
+        analytic_local = self._get_analytic(x_interp=x_interp)
 
         self._y_local = np.concatenate([interp_local, analytic_local], axis=1)
 
@@ -285,7 +285,7 @@ class BurstSampler:
 
         return output
 
-    def _get_analytic_bvars(self, x_interp):
+    def _get_analytic(self, x_interp):
         """Returns calculated analytic burst properties
 
         Returns: [n_epochs, n_analytic_bvars]
