@@ -296,16 +296,14 @@ class BurstSampler:
         output = np.full([self._n_epochs, 2*len(self._analytic_bvars)],
                          np.nan, dtype=float)
 
-        idxs = {}
+        analytic = {'fper': self._get_fper(x_interp),
+                    'fedd': self._terms['lum_edd'],
+                    }
+
         for i, bvar in enumerate(self._analytic_bvars):
-            idxs[bvar] = i
-
-        # ----------------
-        output[:, 2*idxs['fper']] = self._get_fper(x_interp)
-        output[:, 2*idxs['fedd']] = self._terms['lum_edd']
-
-        output[:, 2*idxs['fper']+1] = output[:, 2*idxs['fper']] * self._u_frac['fper']
-        output[:, 2*idxs['fedd']+1] = output[:, 2*idxs['fedd']] * self._u_frac['fedd']
+            idx = 2 * i
+            output[:, idx] = analytic[bvar]
+            output[:, idx+1] = output[:, idx] * self._u_frac[bvar]
 
         return output
 
