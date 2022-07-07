@@ -76,8 +76,7 @@ class BurstSampler:
         self._kepler_radius = self._config['grid']['kepler_radius']
 
         self._weights = self._config['lhood']['weights']
-        self._u_fper_frac = self._config['lhood']['u_fper_frac']
-        self._u_fedd_frac = self._config['lhood']['u_fedd_frac']
+        self._u_frac = self._config['lhood']['u_frac']
         self._priors = self._config['lhood']['priors']
         self._obs_table = None
         self.obs_data = None
@@ -305,8 +304,8 @@ class BurstSampler:
         output[:, 2*idxs['fper']] = self._get_fper(x_interp)
         output[:, 2*idxs['fedd']] = self._terms['lum_edd']
 
-        output[:, 2*idxs['fper']+1] = output[:, 2*idxs['fper']] * self._u_fper_frac
-        output[:, 2*idxs['fedd']+1] = output[:, 2*idxs['fedd']] * self._u_fedd_frac
+        output[:, 2*idxs['fper']+1] = output[:, 2*idxs['fper']] * self._u_frac['fper']
+        output[:, 2*idxs['fedd']+1] = output[:, 2*idxs['fedd']] * self._u_frac['fedd']
 
         return output
 
