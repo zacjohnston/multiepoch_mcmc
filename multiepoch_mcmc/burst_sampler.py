@@ -293,8 +293,7 @@ class BurstSampler:
         ----------
         x_interp : [n_epochs, n_analytic_params]
         """
-        output = np.full([self._n_epochs, 2*len(self._analytic_bvars)],
-                         np.nan, dtype=float)
+        output = np.empty([self._n_epochs, 2*len(self._analytic_bvars)])
 
         analytic = {'fper': self._get_fper(x_interp),
                     'fedd': self._terms['lum_edd'],
@@ -327,9 +326,7 @@ class BurstSampler:
 
         Returns: [n_epochs, n_interp_params]
         """
-        x_interp = np.full((self._n_epochs, len(self._interp_params)),
-                           np.nan,
-                           dtype=float)
+        x_interp = np.empty((self._n_epochs, len(self._interp_params)))
 
         for i in range(self._n_epochs):
             for j, key in enumerate(self._interp_params):
@@ -360,13 +357,14 @@ class BurstSampler:
 
         Returns: [n_epochs, n_bvars]
         """
-        y_observer = np.full([self._n_epochs, 2*len(self.bvars)], np.nan, dtype=float)
+        y_observer = np.empty_like(self._y_local)
 
         for i, bvar in enumerate(self.bvars):
             i0 = 2 * i
             i1 = i0 + 2
-            y_observer[:, i0:i1] = self._shift_to_observer(values=self._y_local[:, i0:i1],
-                                                           bvar=bvar)
+
+            values = self._y_local[:, i0:i1]
+            y_observer[:, i0:i1] = self._shift_to_observer(values=values, bvar=bvar)
 
         return y_observer
 
