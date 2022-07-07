@@ -123,6 +123,7 @@ class GridInterpolator:
 
         t1 = time.time()
         print(f'Construction time: {t1 - t0:.1f} s')
+        self._save_interpolator()
 
     def _save_interpolator(self):
         """Saves interpolator to file
@@ -140,7 +141,6 @@ class GridInterpolator:
             self._construct_interpolator()
 
         self._check_consistency()
-        self._save_interpolator()
 
     def _check_consistency(self):
         """Checks that loaded interpolator matches model grid
@@ -161,9 +161,11 @@ class GridInterpolator:
             int_points = np.unique(self._interpolator.points[:, i])
 
             if not np.array_equal(grid_points, int_points):
-                raise ConsistencyError(f"Loaded interpolator does not match model grid!"
-                                       + f"\ngrid '{param}'         : {grid_points}"
-                                       + f"\ninterpolator '{param}' : {int_points}"
+                raise ConsistencyError(f"Loaded interpolator parameter '{param}' "
+                                       'does not match model grid!'
+                                       f"\ngrid         : {grid_points}"
+                                       f"\ninterpolator : {int_points}"
+                                       '\n\nCheck grid file or use reconstruct=True'
                                        )
 
 
