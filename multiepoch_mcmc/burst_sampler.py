@@ -251,12 +251,12 @@ class BurstSampler:
         self._get_x_dict()
         self._get_terms()
 
-        self._get_model_local()
+        self._get_y_local()
         y_observer = self._get_y_observer()
 
         return y_observer
 
-    def _get_model_local(self):
+    def _get_y_local(self):
         """Calculates model values for given coordinates
 
         Returns: [n_epochs, n_interp_bvars], [n_epochs, n_analytic_bvars]
