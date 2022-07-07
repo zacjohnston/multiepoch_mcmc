@@ -12,7 +12,7 @@ class GridInterpolator:
 
     Attributes
     ----------
-    file : str
+    grid_file : str
         filename of model grid located in 'data/model_grid/'
     grid : pd.DataFrame
         table of model grid data
@@ -28,14 +28,14 @@ class GridInterpolator:
     """
 
     def __init__(self,
-                 file='johnston_2020.txt',
+                 grid_file='johnston_2020.txt',
                  params=('mdot', 'qb', 'x', 'z', 'g'),
                  bvars=('rate', 'u_rate', 'energy', 'u_energy', 'peak', 'u_peak'),
                  ):
         """
         Parameters
         ----------
-        file : str
+        grid_file : str
             filename of model table in `data/model_grid/`
         params : [str]
             list of input model parameters
@@ -43,9 +43,9 @@ class GridInterpolator:
             list of output burst variables
         """
         path = os.path.dirname(__file__)
-        gridpath = os.path.join(path, '..', 'data', 'model_grid', file)
+        gridpath = os.path.join(path, '..', 'data', 'model_grid', grid_file)
 
-        self.file = file
+        self.grid_file = grid_file
         self._gridpath = os.path.abspath(gridpath)
 
         self.params = params
