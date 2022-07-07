@@ -260,42 +260,42 @@ class BurstSampler:
 
         Returns: [n_epochs, n_interp_bvars], [n_epochs, n_analytic_bvars]
         """
-        x_interp = self._get_x_interp()
+        x_epoch = self._get_x_epoch()
 
-        interp_local = self._interpolate(x_interp=x_interp)
-        analytic_local = self._get_analytic(x_interp=x_interp)
+        interp_local = self._interpolate(x_epoch=x_epoch)
+        analytic_local = self._get_analytic(x_epoch=x_epoch)
 
         self._y_local = np.concatenate([interp_local, analytic_local], axis=1)
 
-    def _interpolate(self, x_interp):
+    def _interpolate(self, x_epoch):
         """Interpolates burst properties for N epochs
 
         Returns: [n_epochs, n_interp_bvars]
 
         Parameters
         ----------
-        x_interp : 1darray
+        x_epoch : 1darray
             parameters specific to the model (e.g. mdot1, x, z, qb, get_mass)
         """
-        output = self._grid_interpolator.interpolate(x=x_interp)
+        output = self._grid_interpolator.interpolate(x=x_epoch)
 
         if True in np.isnan(output):
             raise ValueError('Sample is outside of model grid')
 
         return output
 
-    def _get_analytic(self, x_interp):
+    def _get_analytic(self, x_epoch):
         """Returns calculated analytic burst properties
 
         Returns: [n_epochs, n_analytic_bvars]
 
         Parameters
         ----------
-        x_interp : [n_epochs, n_analytic_params]
+        x_epoch : [n_epochs, n_analytic_params]
         """
         output = np.empty([self._n_epochs, 2*len(self._analytic_bvars)])
 
-        analytic = {'fper': self._get_fper(x_interp),
+        analytic = {'fper': self._get_fper(x_epoch),
                     'fedd': self._terms['lum_edd'],
                     }
 
@@ -306,33 +306,33 @@ class BurstSampler:
 
         return output
 
-    def _get_fper(self, x_interp):
-        """Returns persistent accretion flux array (n_epochs, 2)
+    def _get_fper(self, x_epoch):
+        """Returns persistent accretion flux array
             Note: Actually luminosity, as this is the local value
 
-        Returns: [n_epochs, float]
+        Returns: [n_epochs]
 
         Parameters
         ----------
-        x_interp : [n_epochs, n_interp_params]
+        x_epoch : [n_epochs, n_interp_params]
         """
-        mdot = x_interp[:, self._interp_params.index('mdot')]
+        mdot = x_epoch[:, self._interp_params.index('mdot')]
         l_per = mdot * self._mdot_edd * self._terms['potential']
 
         return l_per
 
-    def _get_x_interp(self):
-        """Returns epoch array of coordinates
+    def _get_x_epoch(self):
+        """Reshapes sample coordinates into epoch array
 
         Returns: [n_epochs, n_interp_params]
         """
-        x_interp = np.empty((self._n_epochs, len(self._interp_params)))
+        x_epoch = np.empty((self._n_epochs, len(self._interp_params)))
 
         for i in range(self._n_epochs):
             for j, key in enumerate(self._interp_params):
-                x_interp[i, j] = self._get_interp_param(key=key, epoch_idx=i)
+                x_epoch[i, j] = self._get_interp_param(key=key, epoch_idx=i)
 
-        return x_interp
+        return x_epoch
 
     def _get_interp_param(self, key, epoch_idx):
         """Extracts interp param value from full x_dict
