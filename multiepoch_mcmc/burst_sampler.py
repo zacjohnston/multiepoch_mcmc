@@ -64,7 +64,7 @@ class BurstSampler:
         self._n_epochs = len(self.epochs)
 
         self.params = self._config['keys']['params']
-        self._interp_params = self._config['interp']['params']
+        self._epoch_params = self._config['interp']['params']
         self._epoch_params = self._config['keys']['epoch_params']
         self.n_dim = len(self.params)
 
@@ -93,7 +93,7 @@ class BurstSampler:
         self._unpack_obs_data()
 
         self._grid_interpolator = GridInterpolator(file=self._config['interp']['file'],
-                                                   params=self._interp_params,
+                                                   params=self._epoch_params,
                                                    bvars=self._config['interp']['bvars'],
                                                    reconstruct=False)
 
@@ -316,7 +316,7 @@ class BurstSampler:
         ----------
         x_epoch : [n_epochs, n_interp_params]
         """
-        mdot = x_epoch[:, self._interp_params.index('mdot')]
+        mdot = x_epoch[:, self._epoch_params.index('mdot')]
         l_per = mdot * self._mdot_edd * self._terms['potential']
 
         return l_per
@@ -326,10 +326,10 @@ class BurstSampler:
 
         Returns: [n_epochs, n_interp_params]
         """
-        x_epoch = np.empty((self._n_epochs, len(self._interp_params)))
+        x_epoch = np.empty((self._n_epochs, len(self._epoch_params)))
 
         for i in range(self._n_epochs):
-            for j, key in enumerate(self._interp_params):
+            for j, key in enumerate(self._epoch_params):
                 x_epoch[i, j] = self._get_interp_param(key=key, epoch_idx=i)
 
         return x_epoch
