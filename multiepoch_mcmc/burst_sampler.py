@@ -153,10 +153,10 @@ class BurstSampler:
             return self._zero_lhood
 
         # ===== Sample burst variables =====
-        y_shifted = self.sample(x)
+        y_observer = self.sample(x)
 
         # ===== Evaluate likelihood against observed data =====
-        lh = self.compare(y_shifted)
+        lh = self.compare(y_observer)
         lhood = lp + lh
 
         return lhood
@@ -185,14 +185,14 @@ class BurstSampler:
 
         return prior_lhood
 
-    def compare(self, y_shifted):
+    def compare(self, y_observer):
         """Returns log-likelihood for all burst variables against observations
 
         Returns: float
 
         Parameters
         ----------
-        y_shifted : [n_epochs, n_bvars]
+        y_observer : [n_epochs, n_bvars]
             burst variables for all epochs in observer frame
         """
         lh = 0.0
@@ -201,8 +201,8 @@ class BurstSampler:
             bvar_idx = 2 * i
             u_bvar_idx = bvar_idx + 1
 
-            model = y_shifted[:, bvar_idx]
-            u_model = y_shifted[:, u_bvar_idx]
+            model = y_observer[:, bvar_idx]
+            u_model = y_observer[:, u_bvar_idx]
 
             lh += self._compare_bvar(model=model, u_model=u_model, bvar=bvar)
 
@@ -252,9 +252,9 @@ class BurstSampler:
         self._get_terms()
 
         self._get_model_local()
-        y_shifted = self._get_y_shifted()
+        y_observer = self._get_y_observer()
 
-        return y_shifted
+        return y_observer
 
     def _get_model_local(self):
         """Calculates model values for given coordinates
@@ -369,20 +369,20 @@ class BurstSampler:
     # ===============================================================
     #                      Conversions
     # ===============================================================
-    def _get_y_shifted(self):
+    def _get_y_observer(self):
         """Returns predicted model values (+ uncertainties) shifted to an observer frame
 
         Returns: [n_epochs, n_bvars]
         """
-        y_shifted = np.full([self._n_epochs, 2*len(self.bvars)], np.nan, dtype=float)
+        y_observer = np.full([self._n_epochs, 2*len(self.bvars)], np.nan, dtype=float)
 
         for i, bvar in enumerate(self.bvars):
             i0 = 2 * i
             i1 = i0 + 2
-            y_shifted[:, i0:i1] = self._shift_to_observer(values=self._y_local[:, i0:i1],
-                                                          bvar=bvar)
+            y_observer[:, i0:i1] = self._shift_to_observer(values=self._y_local[:, i0:i1],
+                                                           bvar=bvar)
 
-        return y_shifted
+        return y_observer
 
     def _shift_to_observer(self, values, bvar):
         """Returns burst property shifted to observer frame/units
