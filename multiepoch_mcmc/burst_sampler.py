@@ -65,7 +65,7 @@ class BurstSampler:
 
         self.params = self._config['keys']['params']
         self._epoch_params = self._config['interp']['params']
-        self._epoch_params = self._config['keys']['epoch_params']
+        self._epoch_unique = self._config['keys']['epoch_unique']
         self.n_dim = len(self.params)
 
         self.bvars = self._config['keys']['bvars']
@@ -344,7 +344,7 @@ class BurstSampler:
         key : str
         epoch_idx : int
         """
-        if key in self._epoch_params:
+        if key in self._epoch_unique:
             key = f'{key}{epoch_idx + 1}'
 
         return self._x_dict[key]
