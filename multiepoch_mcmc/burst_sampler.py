@@ -64,12 +64,11 @@ class BurstSampler:
         self._n_epochs = len(self.epochs)
 
         self.params = self._config['keys']['params']
-        self._interp_params = self._config['keys']['interp_params']
+        self._interp_params = self._config['interp']['params']
         self._epoch_params = self._config['keys']['epoch_params']
         self.n_dim = len(self.params)
 
         self.bvars = self._config['keys']['bvars']
-        self._interp_bvars = self._config['keys']['interp_bvars']
         self._analytic_bvars = self._config['keys']['analytic_bvars']
         
         self._grid_bounds = self._config['grid']['bounds']
