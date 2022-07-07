@@ -91,6 +91,7 @@ class BurstSampler:
         self._interp_local = np.empty([self._n_epochs, 2*len(self._interp_bvars)])
         self._analytic_local = np.empty([self._n_epochs, 2*len(self._analytic_bvars)])
         self._y_local = np.empty([self._n_epochs, 2*len(self.bvars)])
+        self._y_observer = np.empty_like(self._y_local)
 
         self._unpack_obs_data()
 
@@ -253,9 +254,9 @@ class BurstSampler:
         self._get_terms()
 
         self._get_y_local()
-        y_observer = self._get_y_observer()
+        self._get_y_observer()
 
-        return y_observer
+        return self._y_observer
 
     def _get_y_local(self):
         """Calculates model values for given coordinates
@@ -319,16 +320,12 @@ class BurstSampler:
 
         Returns: [n_epochs, n_bvars]
         """
-        y_observer = np.empty_like(self._y_local)
-
         for i, bvar in enumerate(self.bvars):
             i0 = 2 * i
             i1 = i0 + 2
 
             values = self._y_local[:, i0:i1]
-            y_observer[:, i0:i1] = self._shift_to_observer(values=values, bvar=bvar)
-
-        return y_observer
+            self._y_observer[:, i0:i1] = self._shift_to_observer(values=values, bvar=bvar)
 
     def _shift_to_observer(self, values, bvar):
         """Returns burst property shifted to observer frame/units
