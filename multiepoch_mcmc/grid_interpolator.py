@@ -133,8 +133,14 @@ class GridInterpolator:
         """Loads interpolator from file
         """
         print(f'Loading interpolator: {self._intpath}')
-        self._interpolator = pickle.load(open(self._intpath, 'rb'))
+        try:
+            self._interpolator = pickle.load(open(self._intpath, 'rb'))
+        except FileNotFoundError:
+            print("Interpolator file not found! Reconstructing from scratch")
+            self._construct_interpolator()
+
         self._check_consistency()
+        self._save_interpolator()
 
     def _check_consistency(self):
         """Checks that loaded interpolator matches model grid
