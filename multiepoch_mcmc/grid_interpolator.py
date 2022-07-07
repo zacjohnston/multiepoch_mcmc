@@ -67,6 +67,9 @@ class GridInterpolator:
         else:
             self._load_interpolator()
 
+    # ===============================================================
+    #                      Interpolation
+    # ===============================================================
     def interpolate(self, x):
         """Interpolates burst variables from grid
 
@@ -91,7 +94,7 @@ class GridInterpolator:
         print(f'Loading grid: {self._gridpath}')
         self.grid = pd.read_csv(self._gridpath, delim_whitespace=True)
 
-        print('\nGrid parameters\n' + 15*'-')
+        print('\nGrid parameters\n' + 15 * '-')
         for p in self.params:
             print(f'{p.ljust(5)} = {np.unique(self.grid[p])}')
 
@@ -119,7 +122,7 @@ class GridInterpolator:
         self._interpolator = LinearNDInterpolator(x, y)
 
         t1 = time.time()
-        print(f'Setup time: {t1-t0:.1f} s')
+        print(f'Construction time: {t1 - t0:.1f} s')
 
     def _save_interpolator(self):
         """Saves interpolator to file
@@ -131,3 +134,34 @@ class GridInterpolator:
         """
         print(f'Loading interpolator: {self._intpath}')
         self._interpolator = pickle.load(open(self._intpath, 'rb'))
+        self._check_consistency()
+
+    def _check_consistency(self):
+        """Checks that loaded interpolator matches model grid
+        """
+        # Compare number of models
+        grid_models = len(self.grid)
+        int_models = len(self._interpolator.points)
+
+        if grid_models != int_models:
+            raise ConsistencyError(f"Loaded interpolator does not match model grid!"
+                                   f"\ngrid models         : {grid_models}"
+                                   f"\ninterpolator models : {int_models}"
+                                   )
+
+        # Compare model parameters
+        for i, param in enumerate(self.params):
+            grid_points = np.unique(self.grid[param])
+            int_points = np.unique(self._interpolator.points[:, i])
+
+            if not np.array_equal(grid_points, int_points):
+                raise ConsistencyError(f"Loaded interpolator does not match model grid!"
+                                       + f"\ngrid '{param}'         : {grid_points}"
+                                       + f"\ninterpolator '{param}' : {int_points}"
+                                       )
+
+
+class ConsistencyError(Exception):
+    """Model grid and interpolator are not consistent
+    """
+    pass
