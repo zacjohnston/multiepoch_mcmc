@@ -43,7 +43,7 @@ class GridInterpolator:
         bvars : [str]
             list of output burst variables
         reconstruct : bool
-            reconstruct interpolator object (as opposed to loading from file)
+            reconstruct interpolator object from grid (as opposed to loading from file)
         """
         path = os.path.dirname(__file__)
         gridpath = os.path.join(path, '..', 'data', 'model_grid', file)
@@ -63,7 +63,7 @@ class GridInterpolator:
         self._load_grid()
 
         if reconstruct:
-            self._setup_interpolator()
+            self._construct_interpolator()
         else:
             self._load_interpolator()
 
@@ -97,10 +97,10 @@ class GridInterpolator:
 
         print(f'\nTotal models: {len(self.grid)}')
 
-    def _setup_interpolator(self):
-        """Generates interpolator object from grid
+    def _construct_interpolator(self):
+        """Constructs interpolator from model grid
         """
-        print('\nGenerating grid interpolator')
+        print('\nConstructing grid interpolator')
         t0 = time.time()
         x = []
 
