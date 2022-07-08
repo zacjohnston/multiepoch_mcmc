@@ -6,6 +6,7 @@ import astropy.constants as const
 
 from multiepoch_mcmc import accretion, gravity, config
 from multiepoch_mcmc.grid_interpolator import GridInterpolator
+from multiepoch_mcmc.obs_data import ObsData
 
 
 class ZeroLhood(Exception):
@@ -78,8 +79,6 @@ class BurstSampler:
         self._weights = self._config['lhood']['weights']
         self._u_frac = self._config['lhood']['u_frac']
         self._priors = self._config['lhood']['priors']
-        self._obs_table = None
-        self.obs_data = None
 
         self._idxs = {}
         for i, key in enumerate(self.params):
@@ -96,47 +95,14 @@ class BurstSampler:
         self._y_local = np.empty([self._n_epochs, 2*len(self.bvars)])
         self._y_observer = np.empty_like(self._y_local)
 
-        self._unpack_obs_data()
+        self._obs = ObsData(system=self.system, epochs=self.epochs)
+        self.obs_data = self._obs.data
 
-        self._grid_interpolator = GridInterpolator(file=self._config['interp']['file'],
-                                                   params=self._epoch_params,
-                                                   bvars=self._config['interp']['bvars'],
-                                                   reconstruct=False)
-
-    # ===============================================================
-    #                      Setup
-    # ===============================================================
-    def _unpack_obs_data(self):
-        """Unpacks observed burst data from table
-        """
-        self._load_obs_table()
-        self.obs_data = self._obs_table.to_dict(orient='list')
-
-        for key, item in self.obs_data.items():
-            self.obs_data[key] = np.array(item)
-
-        # ===== Apply bolometric corrections to fper ======
-        u_fper_frac = np.sqrt((self.obs_data['u_cbol'] / self.obs_data['cbol']) ** 2
-                              + (self.obs_data['u_fper'] / self.obs_data['fper']) ** 2)
-
-        self.obs_data['fper'] *= self.obs_data['cbol']
-        self.obs_data['u_fper'] = self.obs_data['fper'] * u_fper_frac
-
-    def _load_obs_table(self):
-        """Loads observed burst data from file
-        """
-        path = os.path.dirname(__file__)
-        filename = f'{self.system}.dat'
-        filepath = os.path.join(path, '..', 'data', 'obs', self.system, filename)
-
-        print(f'Loading obs table: {os.path.abspath(filepath)}')
-        self._obs_table = pd.read_csv(filepath, delim_whitespace=True)
-        self._obs_table.set_index('epoch', inplace=True, verify_integrity=True)
-
-        try:
-            self._obs_table = self._obs_table.loc[list(self.epochs)]
-        except KeyError:
-            raise KeyError(f'epoch(s) not found in obs_data table')
+        self._interpolator = GridInterpolator(file=self._config['interp']['file'],
+                                              params=self._epoch_params,
+                                              bvars=self._config['interp']['bvars'],
+                                              reconstruct=False,
+                                              ).interpolate
 
     # ===============================================================
     #                      Likelihoods
@@ -265,7 +231,7 @@ class BurstSampler:
     def _get_y_local(self):
         """Calculates model values for given coordinates
 
-        Returns: [n_epochs, n_interp_bvars], [n_epochs, n_analytic_bvars]
+        Returns: [n_epochs, n_bvars]
         """
         self._interpolate()
         self._get_analytic()
@@ -277,10 +243,7 @@ class BurstSampler:
 
         Returns: [n_epochs, n_interp_bvars]
         """
-        self._interp_local = self._grid_interpolator.interpolate(x=self._x_epoch)
-
-        if True in np.isnan(self._interp_local):
-            raise ValueError('Sample is outside of model grid')
+        self._interp_local = self._interpolator(x=self._x_epoch)
 
     def _get_analytic(self):
         """Calculates analytic burst properties
