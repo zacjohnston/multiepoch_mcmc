@@ -348,12 +348,7 @@ class BurstSampler:
         In special case bvar='fper', 'values' must be local accrate
                 as fraction of Eddington rate.
         """
-        gr_factor = self._terms['gr_factor'][bvar]
-        flux_factor = self._terms['flux_factor'][bvar]
-
-        shifted = (values * gr_factor) / flux_factor
-
-        return shifted
+        return values * self._terms['shift_factor'][bvar]
 
     def _get_terms(self):
         """Calculate derived terms
@@ -379,21 +374,15 @@ class BurstSampler:
         self._lum_to_flux['burst'] = 4 * np.pi * (self._x_key['d_b'] * self._kpc_to_cm)**2
         self._lum_to_flux['pers'] = self._lum_to_flux['burst'] * self._x_key['xi_ratio']
 
-        self._terms['flux_factor'] = {'rate': 1,
-                                      'fluence': self._lum_to_flux['burst'],
-                                      'peak': self._lum_to_flux['burst'],
-                                      'fedd': self._lum_to_flux['burst'],
-                                      'fper': self._lum_to_flux['pers'],
-                                      }
+        burst_factor = self._terms['mass_ratio'] / (self._lum_to_flux['burst'] * self._terms['redshift'])
+        pers_factor = self._terms['mass_ratio'] / (self._lum_to_flux['pers'] * self._terms['redshift'])
 
-        mass_on_red = self._terms['mass_ratio'] / self._terms['redshift']
-
-        self._terms['gr_factor'] = {'rate': 1 / self._terms['redshift'],
-                                    'fluence': self._terms['mass_ratio'],
-                                    'peak': mass_on_red,
-                                    'fedd': mass_on_red,
-                                    'fper': mass_on_red,
-                                    }
+        self._terms['shift_factor'] = {'rate': 1 / self._terms['redshift'],
+                                       'fluence': self._terms['mass_ratio'] / self._lum_to_flux['burst'],
+                                       'peak': burst_factor,
+                                       'fedd': burst_factor,
+                                       'fper': pers_factor,
+                                       }
 
     # ===============================================================
     #                      Misc.
