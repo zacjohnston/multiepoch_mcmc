@@ -296,7 +296,9 @@ class BurstSampler:
     def _get_analytic(self):
         """Calculates analytic burst properties
         """
-        analytic = {'fper': self._get_fper(),
+        mdot = self._x_epoch[:, self._epoch_params.index('mdot')]
+
+        analytic = {'fper': mdot * self._terms['mdot_to_lum'],
                     'fedd': self._terms['lum_edd'],
                     }
 
@@ -304,17 +306,6 @@ class BurstSampler:
             idx = 2 * i
             self._analytic_local[:, idx] = analytic[bvar]
             self._analytic_local[:, idx+1] = analytic[bvar] * self._u_frac[bvar]
-
-    def _get_fper(self):
-        """Returns persistent accretion flux array
-            Note: Actually luminosity, as this is the local value
-
-        Returns: [n_epochs]
-        """
-        mdot = self._x_epoch[:, self._epoch_params.index('mdot')]
-        l_per = mdot * self._terms['mdot_to_lum']
-
-        return l_per
 
     # ===============================================================
     #                      Conversions
