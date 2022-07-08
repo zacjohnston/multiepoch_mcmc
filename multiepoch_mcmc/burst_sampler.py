@@ -91,7 +91,7 @@ class BurstSampler:
         self._x_key = dict.fromkeys(self.params)
         self._x_epoch = np.empty((self._n_epochs, len(self._epoch_params)))
         self._terms = {}
-        self._flux_factors = {}
+        self._lum_to_flux = dict.fromkeys(['burst', 'pers'])
         self._interp_local = np.empty([self._n_epochs, 2*len(self._interp_bvars)])
         self._analytic_local = np.empty([self._n_epochs, 2*len(self._analytic_bvars)])
         self._y_local = np.empty([self._n_epochs, 2*len(self.bvars)])
@@ -376,14 +376,14 @@ class BurstSampler:
 
         self._terms['potential'] = -gravity.potential_from_redshift(self._terms['redshift'])
 
-        self._flux_factors['burst'] = 4 * np.pi * (self._x_key['d_b'] * self._kpc_to_cm)**2
-        self._flux_factors['pers'] = self._flux_factors['burst'] * self._x_key['xi_ratio']
+        self._lum_to_flux['burst'] = 4 * np.pi * (self._x_key['d_b'] * self._kpc_to_cm)**2
+        self._lum_to_flux['pers'] = self._lum_to_flux['burst'] * self._x_key['xi_ratio']
 
         self._terms['flux_factor'] = {'rate': 1,
-                                      'fluence': self._flux_factors['burst'],
-                                      'peak': self._flux_factors['burst'],
-                                      'fedd': self._flux_factors['burst'],
-                                      'fper': self._flux_factors['pers'],
+                                      'fluence': self._lum_to_flux['burst'],
+                                      'peak': self._lum_to_flux['burst'],
+                                      'fedd': self._lum_to_flux['burst'],
+                                      'fper': self._lum_to_flux['pers'],
                                       }
 
         mass_on_red = self._terms['mass_ratio'] / self._terms['redshift']
