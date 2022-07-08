@@ -83,7 +83,12 @@ class GridInterpolator:
             Coordinates of grid point to interpolate
             Must exactly match length and ordering of 'params'
         """
-        return self._interpolator(x)
+        y = self._interpolator(x)
+
+        if True in np.isnan(y):
+            raise ValueError('Sample is outside of model grid')
+
+        return y
 
     # ===============================================================
     #                      Setup
