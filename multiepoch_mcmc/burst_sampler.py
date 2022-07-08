@@ -82,9 +82,13 @@ class BurstSampler:
         self._obs_table = None
         self.obs_data = None
 
+        self._idxs = {}
+        for i, key in enumerate(self.params):
+            self._idxs[key] = i
+
         # dynamic variables
-        self._x = None
-        self._x_dict = {}
+        self._x = np.empty(len(self.params))
+        self._x_dict = dict.fromkeys(self.params)
         self._x_epoch = np.empty((self._n_epochs, len(self._epoch_params)))
         self._terms = {}
         self._flux_factors = {}
