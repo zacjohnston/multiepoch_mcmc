@@ -277,7 +277,7 @@ class BurstSampler:
         self._x = x
         self._fill_x_key()
         self._get_x_epoch()
-        self._get_terms()
+        self._get_all_terms()
 
         self._get_y_local()
         self._get_y_observer()
@@ -313,7 +313,7 @@ class BurstSampler:
             self._analytic_local[:, idx+1] = self._terms[bvar] * self._u_frac[bvar]
 
     # ===============================================================
-    #                      Conversions
+    #                      Observer conversions
     # ===============================================================
     def _get_y_observer(self):
         """Returns predicted model values (+ uncertainties) shifted to an observer frame
@@ -346,8 +346,22 @@ class BurstSampler:
         """
         return values * self._terms['shift_factor'][bvar]
 
-    def _get_terms(self):
-        """Calculate derived/analytic terms
+    # ===============================================================
+    #                      Analytic terms
+    # ===============================================================
+    def _get_all_terms(self):
+        """Calculate all derived/analytic terms
+
+        Assumes the following have already been executed:
+            - self._fill_x_key()
+            - self._get_x_epoch()
+        """
+        self._get_gravity_terms()
+        self._get_conversion_terms()
+        self._get_analytic_terms()
+
+    def _get_gravity_terms(self):
+        """Calculate gravity terms
 
         Assumes the following have already been executed:
             - self._fill_x_key()
@@ -365,11 +379,26 @@ class BurstSampler:
         redshift = gravity.redshift_from_xi_phi(phi=phi, xi=r_ratio)
 
         potential = -gravity.potential_from_redshift(redshift)
-        self._terms['mdot_to_lum'] = self._mdot_edd * potential
 
-        # local to observer conversions
+        self._terms['mass_nw'] = mass_nw
+        self._terms['phi'] = phi
+        self._terms['r_ratio'] = r_ratio
+        self._terms['redshift'] = redshift
+        self._terms['potential'] = potential
+
+    def _get_conversion_terms(self):
+        """Calculate unit & frame conversion terms
+
+        Assumes the following have already been executed:
+            - self._fill_x_key()
+            - self._get_x_epoch()
+            - self._get_gravity_terms()
+        """
         burst_lum_to_flux = 4 * np.pi * (self._x_key['d_b'] * self._kpc_to_cm)**2
         pers_lum_to_flux = burst_lum_to_flux * self._x_key['xi_ratio']
+
+        phi = self._terms['phi']
+        redshift = self._terms['redshift']
 
         fluence_factor = phi / burst_lum_to_flux
         burst_factor = phi / (burst_lum_to_flux * redshift)
@@ -382,9 +411,21 @@ class BurstSampler:
                                        'fper': pers_factor,
                                        }
 
+        self._terms['mdot_to_lum'] = self._mdot_edd * self._terms['potential']
+
+    def _get_analytic_terms(self):
+        """Calculate analytic terms
+
+        Assumes the following have already been executed:
+            - self._fill_x_key()
+            - self._get_x_epoch()
+            - self._get_gravity_terms()
+            - self._get_conversion_terms()
+        """
+        # Note: actually luminosity until converted
         mdot = self._x_epoch[:, self._epoch_params.index('mdot')]
         self._terms['fper'] = mdot * self._terms['mdot_to_lum']
 
-        # Note: fedd actually lum until converted
-        self._terms['fedd'] = accretion.edd_lum_newt(m_nw=mass_nw,
+        # Note: actually luminosity until converted
+        self._terms['fedd'] = accretion.edd_lum_newt(m_nw=self._terms['mass_nw'],
                                                      x=self._x_key['x'])
