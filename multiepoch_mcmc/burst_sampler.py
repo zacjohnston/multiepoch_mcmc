@@ -4,7 +4,6 @@ import pandas as pd
 import astropy.units as u
 import astropy.constants as const
 
-# pyburst
 from multiepoch_mcmc import accretion, gravity, config
 from multiepoch_mcmc.grid_interpolator import GridInterpolator
 
@@ -116,7 +115,7 @@ class BurstSampler:
         for key, item in self.obs_data.items():
             self.obs_data[key] = np.array(item)
 
-        # ===== Apply bolometric corrections (cbol) to fper ======
+        # ===== Apply bolometric corrections to fper ======
         u_fper_frac = np.sqrt((self.obs_data['u_cbol'] / self.obs_data['cbol']) ** 2
                               + (self.obs_data['u_fper'] / self.obs_data['fper']) ** 2)
 
@@ -251,6 +250,9 @@ class BurstSampler:
 
     def _get_x_epoch(self):
         """Reshapes sample coordinates into epoch array: [n_epochs, n_epoch_params]
+
+        Assumes the following have already been executed:
+            - self._fill_x_key()
         """
         for i in range(self._n_epochs):
             for j, key in enumerate(self._epoch_params):
@@ -305,16 +307,10 @@ class BurstSampler:
     def _get_analytic(self):
         """Calculates analytic burst properties
         """
-        mdot = self._x_epoch[:, self._epoch_params.index('mdot')]
-
-        analytic = {'fper': mdot * self._terms['mdot_to_lum'],
-                    'fedd': self._terms['lum_edd'],
-                    }
-
         for i, bvar in enumerate(self._analytic_bvars):
             idx = 2 * i
-            self._analytic_local[:, idx] = analytic[bvar]
-            self._analytic_local[:, idx+1] = analytic[bvar] * self._u_frac[bvar]
+            self._analytic_local[:, idx] = self._terms[bvar]
+            self._analytic_local[:, idx+1] = self._terms[bvar] * self._u_frac[bvar]
 
     # ===============================================================
     #                      Conversions
@@ -351,7 +347,11 @@ class BurstSampler:
         return values * self._terms['shift_factor'][bvar]
 
     def _get_terms(self):
-        """Calculate derived terms
+        """Calculate derived/analytic terms
+
+        Assumes the following have already been executed:
+            - self._fill_x_key()
+            - self._get_x_epoch()
         """
         mass_nw = gravity.mass_from_g(g_nw=self._x_key['g'],
                                       r_nw=self._kepler_radius)
@@ -363,9 +363,6 @@ class BurstSampler:
                                  phi=phi)
 
         redshift = gravity.redshift_from_xi_phi(phi=phi, xi=r_ratio)
-
-        self._terms['lum_edd'] = accretion.edd_lum_newt(m_nw=mass_nw,
-                                                        x=self._x_key['x'])
 
         potential = -gravity.potential_from_redshift(redshift)
         self._terms['mdot_to_lum'] = self._mdot_edd * potential
@@ -384,3 +381,10 @@ class BurstSampler:
                                        'fedd': burst_factor,
                                        'fper': pers_factor,
                                        }
+
+        mdot = self._x_epoch[:, self._epoch_params.index('mdot')]
+        self._terms['fper'] = mdot * self._terms['mdot_to_lum']
+
+        # Note: fedd actually lum until converted
+        self._terms['fedd'] = accretion.edd_lum_newt(m_nw=mass_nw,
+                                                     x=self._x_key['x'])
