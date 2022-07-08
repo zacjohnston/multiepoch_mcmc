@@ -311,7 +311,7 @@ class BurstSampler:
                     key = f'{key}{i+1}'
 
                 self._x_epoch[i, j] = self._x_key[key]
-                
+
     # ===============================================================
     #                      Observer conversions
     # ===============================================================
@@ -325,26 +325,7 @@ class BurstSampler:
             i1 = i0 + 2
 
             values = self._y_local[:, i0:i1]
-            self._y_observer[:, i0:i1] = self._shift_to_observer(values=values, bvar=bvar)
-
-    def _shift_to_observer(self, values, bvar):
-        """Returns burst property shifted to observer frame/units
-
-        Returns: float or [float]
-
-        Parameters
-        ----------
-        values : flt or ndarray
-            model frame value(s)
-        bvar : str
-            name of burst property being converted/calculated
-
-        Notes
-        ------
-        In special case bvar='fper', 'values' must be local accrate
-                as fraction of Eddington rate.
-        """
-        return values * self._terms['shift_factor'][bvar]
+            self._y_observer[:, i0:i1] = values * self._terms['shift_factor'][bvar]
 
     # ===============================================================
     #                      Analytic terms
@@ -361,7 +342,7 @@ class BurstSampler:
         self._get_analytic_terms()
 
     def _get_gravity_terms(self):
-        """Calculate gravity terms
+        """Calculates gravity terms
 
         Assumes the following have already been executed:
             - self._fill_x_key()
@@ -387,7 +368,7 @@ class BurstSampler:
         self._terms['potential'] = potential
 
     def _get_conversion_terms(self):
-        """Calculate unit & frame conversion terms
+        """Calculates unit & frame conversion terms
 
         Assumes the following have already been executed:
             - self._fill_x_key()
@@ -414,7 +395,7 @@ class BurstSampler:
         self._terms['mdot_to_lum'] = self._mdot_edd * self._terms['potential']
 
     def _get_analytic_terms(self):
-        """Calculate analytic terms
+        """Calculates analytic terms
 
         Assumes the following have already been executed:
             - self._fill_x_key()
