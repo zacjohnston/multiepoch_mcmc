@@ -88,7 +88,7 @@ class BurstSampler:
 
         # dynamic variables
         self._x = np.empty(len(self.params))
-        self._x_dict = dict.fromkeys(self.params)
+        self._x_key = dict.fromkeys(self.params)
         self._x_epoch = np.empty((self._n_epochs, len(self._epoch_params)))
         self._terms = {}
         self._flux_factors = {}
@@ -254,7 +254,7 @@ class BurstSampler:
             sample coordinates
         """
         self._x = x
-        self._get_x_dict()
+        self._fill_x_key()
         self._get_terms()
 
         self._get_y_local()
@@ -281,7 +281,7 @@ class BurstSampler:
                 if key in self._epoch_unique:
                     key = f'{key}{i+1}'
 
-                self._x_epoch[i, j] = self._x_dict[key]
+                self._x_epoch[i, j] = self._x_key[key]
 
     def _interpolate(self):
         """Interpolates burst properties for N epochs
@@ -358,10 +358,10 @@ class BurstSampler:
     def _get_terms(self):
         """Calculate derived terms
         """
-        self._terms['mass_nw'] = gravity.mass_from_g(g_nw=self._x_dict['g'],
+        self._terms['mass_nw'] = gravity.mass_from_g(g_nw=self._x_key['g'],
                                                      r_nw=self._kepler_radius)
 
-        self._terms['mass_ratio'] = self._x_dict['mass'] / self._terms['mass_nw']
+        self._terms['mass_ratio'] = self._x_key['mass'] / self._terms['mass_nw']
 
         self._terms['r_ratio'] = gravity.get_xi(r_nw=self._kepler_radius,
                                                 m_nw=self._terms['mass_nw'],
@@ -372,12 +372,12 @@ class BurstSampler:
                                                 xi=self._terms['r_ratio'])
 
         self._terms['lum_edd'] = accretion.edd_lum_newt(m_nw=self._terms['mass_nw'],
-                                                        x=self._x_dict['x'])
+                                                        x=self._x_key['x'])
 
         self._terms['potential'] = -gravity.potential_from_redshift(self._terms['redshift'])
 
-        self._flux_factors['burst'] = 4 * np.pi * (self._x_dict['d_b'] * self._kpc_to_cm)**2
-        self._flux_factors['pers'] = self._flux_factors['burst'] * self._x_dict['xi_ratio']
+        self._flux_factors['burst'] = 4 * np.pi * (self._x_key['d_b'] * self._kpc_to_cm)**2
+        self._flux_factors['pers'] = self._flux_factors['burst'] * self._x_key['xi_ratio']
 
         self._terms['flux_factor'] = {'rate': 1,
                                       'fluence': self._flux_factors['burst'],
@@ -396,8 +396,8 @@ class BurstSampler:
     # ===============================================================
     #                      Misc.
     # ===============================================================
-    def _get_x_dict(self):
-        """Converts sample coordinates to dictionary
+    def _fill_x_key(self):
+        """Fills dictionary of sample coordinates
         """
         for i, key in enumerate(self.params):
-            self._x_dict[key] = self._x[i]
+            self._x_key[key] = self._x[i]
