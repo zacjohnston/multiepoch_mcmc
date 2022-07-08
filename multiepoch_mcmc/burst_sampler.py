@@ -240,28 +240,6 @@ class BurstSampler:
         return lh.sum()
 
     # ===============================================================
-    #                      Sample coordinates
-    # ===============================================================
-    def _fill_x_key(self):
-        """Fills dictionary of sample coordinates
-        """
-        for i, key in enumerate(self.params):
-            self._x_key[key] = self._x[i]
-
-    def _get_x_epoch(self):
-        """Reshapes sample coordinates into epoch array: [n_epochs, n_epoch_params]
-
-        Assumes the following have already been executed:
-            - self._fill_x_key()
-        """
-        for i in range(self._n_epochs):
-            for j, key in enumerate(self._epoch_params):
-                if key in self._epoch_unique:
-                    key = f'{key}{i+1}'
-
-                self._x_epoch[i, j] = self._x_key[key]
-
-    # ===============================================================
     #                      Burst Sampling
     # ===============================================================
     def sample(self, x):
@@ -312,6 +290,28 @@ class BurstSampler:
             self._analytic_local[:, idx] = self._terms[bvar]
             self._analytic_local[:, idx+1] = self._terms[bvar] * self._u_frac[bvar]
 
+    # ===============================================================
+    #                      Sample coordinates
+    # ===============================================================
+    def _fill_x_key(self):
+        """Fills dictionary of sample coordinates
+        """
+        for i, key in enumerate(self.params):
+            self._x_key[key] = self._x[i]
+
+    def _get_x_epoch(self):
+        """Reshapes sample coordinates into epoch array: [n_epochs, n_epoch_params]
+
+        Assumes the following have already been executed:
+            - self._fill_x_key()
+        """
+        for i in range(self._n_epochs):
+            for j, key in enumerate(self._epoch_params):
+                if key in self._epoch_unique:
+                    key = f'{key}{i+1}'
+
+                self._x_epoch[i, j] = self._x_key[key]
+                
     # ===============================================================
     #                      Observer conversions
     # ===============================================================
