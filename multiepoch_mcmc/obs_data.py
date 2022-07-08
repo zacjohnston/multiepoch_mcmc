@@ -11,7 +11,7 @@ class ObsData:
     ----------
     system : str
     epochs : [int]
-    obs_data : {}
+    data : {}
     """
 
     def __init__(self,
@@ -27,28 +27,28 @@ class ObsData:
         self.system = system
         self.epochs = epochs
 
-        self._obs_table = None
-        self.obs_data = None
+        self._table = None
+        self.data = None
 
-        self._load_obs_table()
-        self._unpack_obs_data()
+        self._load_table()
+        self._unpack_data()
 
-    def _unpack_obs_data(self):
+    def _unpack_data(self):
         """Unpacks observed burst data from loaded table
         """
-        self.obs_data = self._obs_table.to_dict(orient='list')
+        self.data = self._table.to_dict(orient='list')
 
-        for key, item in self.obs_data.items():
-            self.obs_data[key] = np.array(item)
+        for key, item in self.data.items():
+            self.data[key] = np.array(item)
 
         # ===== Apply bolometric corrections to fper ======
-        u_fper_frac = np.sqrt((self.obs_data['u_cbol'] / self.obs_data['cbol']) ** 2
-                              + (self.obs_data['u_fper'] / self.obs_data['fper']) ** 2)
+        u_fper_frac = np.sqrt((self.data['u_cbol'] / self.data['cbol']) ** 2
+                              + (self.data['u_fper'] / self.data['fper']) ** 2)
 
-        self.obs_data['fper'] *= self.obs_data['cbol']
-        self.obs_data['u_fper'] = self.obs_data['fper'] * u_fper_frac
+        self.data['fper'] *= self.data['cbol']
+        self.data['u_fper'] = self.data['fper'] * u_fper_frac
 
-    def _load_obs_table(self):
+    def _load_table(self):
         """Loads observed burst data from file
         """
         path = os.path.dirname(__file__)
@@ -56,10 +56,10 @@ class ObsData:
         filepath = os.path.join(path, '..', 'data', 'obs', self.system, filename)
 
         print(f'Loading obs table: {os.path.abspath(filepath)}')
-        self._obs_table = pd.read_csv(filepath, delim_whitespace=True)
-        self._obs_table.set_index('epoch', inplace=True, verify_integrity=True)
+        self._table = pd.read_csv(filepath, delim_whitespace=True)
+        self._table.set_index('epoch', inplace=True, verify_integrity=True)
 
         try:
-            self._obs_table = self._obs_table.loc[list(self.epochs)]
+            self._table = self._table.loc[list(self.epochs)]
         except KeyError:
-            raise KeyError(f'epoch(s) not found in obs_data table')
+            raise KeyError(f'epoch(s) not found in data table')
