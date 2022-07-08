@@ -241,6 +241,25 @@ class BurstSampler:
         return lh.sum()
 
     # ===============================================================
+    #                      Sample coordinates
+    # ===============================================================
+    def _fill_x_key(self):
+        """Fills dictionary of sample coordinates
+        """
+        for i, key in enumerate(self.params):
+            self._x_key[key] = self._x[i]
+
+    def _get_x_epoch(self):
+        """Reshapes sample coordinates into epoch array: [n_epochs, n_epoch_params]
+        """
+        for i in range(self._n_epochs):
+            for j, key in enumerate(self._epoch_params):
+                if key in self._epoch_unique:
+                    key = f'{key}{i+1}'
+
+                self._x_epoch[i, j] = self._x_key[key]
+
+    # ===============================================================
     #                      Burst Sampling
     # ===============================================================
     def sample(self, x):
@@ -255,6 +274,7 @@ class BurstSampler:
         """
         self._x = x
         self._fill_x_key()
+        self._get_x_epoch()
         self._get_terms()
 
         self._get_y_local()
@@ -267,21 +287,10 @@ class BurstSampler:
 
         Returns: [n_epochs, n_interp_bvars], [n_epochs, n_analytic_bvars]
         """
-        self._get_x_epoch()
         self._interpolate()
         self._get_analytic()
 
         self._y_local = np.concatenate([self._interp_local, self._analytic_local], axis=1)
-
-    def _get_x_epoch(self):
-        """Reshapes sample coordinates into epoch array: [n_epochs, n_interp_params]
-        """
-        for i in range(self._n_epochs):
-            for j, key in enumerate(self._epoch_params):
-                if key in self._epoch_unique:
-                    key = f'{key}{i+1}'
-
-                self._x_epoch[i, j] = self._x_key[key]
 
     def _interpolate(self):
         """Interpolates burst properties for N epochs
@@ -375,12 +384,3 @@ class BurstSampler:
                                        'fedd': burst_factor,
                                        'fper': pers_factor,
                                        }
-
-    # ===============================================================
-    #                      Misc.
-    # ===============================================================
-    def _fill_x_key(self):
-        """Fills dictionary of sample coordinates
-        """
-        for i, key in enumerate(self.params):
-            self._x_key[key] = self._x[i]
