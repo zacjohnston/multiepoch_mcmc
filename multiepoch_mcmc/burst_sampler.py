@@ -312,7 +312,7 @@ class BurstSampler:
         Returns: [n_epochs]
         """
         mdot = self._x_epoch[:, self._epoch_params.index('mdot')]
-        l_per = mdot * self._mdot_edd * self._terms['potential']
+        l_per = mdot * self._terms['mdot_to_lum']
 
         return l_per
 
@@ -353,32 +353,33 @@ class BurstSampler:
     def _get_terms(self):
         """Calculate derived terms
         """
-        self._terms['mass_nw'] = gravity.mass_from_g(g_nw=self._x_key['g'],
-                                                     r_nw=self._kepler_radius)
+        mass_nw = gravity.mass_from_g(g_nw=self._x_key['g'],
+                                      r_nw=self._kepler_radius)
 
-        self._terms['mass_ratio'] = self._x_key['mass'] / self._terms['mass_nw']
+        phi = self._x_key['mass'] / mass_nw
 
-        self._terms['r_ratio'] = gravity.get_xi(r_nw=self._kepler_radius,
-                                                m_nw=self._terms['mass_nw'],
-                                                phi=self._terms['mass_ratio'])
+        r_ratio = gravity.get_xi(r_nw=self._kepler_radius,
+                                 m_nw=mass_nw,
+                                 phi=phi)
 
-        self._terms['redshift'] = gravity.redshift_from_xi_phi(
-                                                phi=self._terms['mass_ratio'],
-                                                xi=self._terms['r_ratio'])
+        redshift = gravity.redshift_from_xi_phi(phi=phi, xi=r_ratio)
 
-        self._terms['lum_edd'] = accretion.edd_lum_newt(m_nw=self._terms['mass_nw'],
+        self._terms['lum_edd'] = accretion.edd_lum_newt(m_nw=mass_nw,
                                                         x=self._x_key['x'])
 
-        self._terms['potential'] = -gravity.potential_from_redshift(self._terms['redshift'])
+        potential = -gravity.potential_from_redshift(redshift)
+        self._terms['mdot_to_lum'] = self._mdot_edd * potential
 
-        self._lum_to_flux['burst'] = 4 * np.pi * (self._x_key['d_b'] * self._kpc_to_cm)**2
-        self._lum_to_flux['pers'] = self._lum_to_flux['burst'] * self._x_key['xi_ratio']
+        # local to observer conversions
+        burst_lum_to_flux = 4 * np.pi * (self._x_key['d_b'] * self._kpc_to_cm)**2
+        pers_lum_to_flux = burst_lum_to_flux * self._x_key['xi_ratio']
 
-        burst_factor = self._terms['mass_ratio'] / (self._lum_to_flux['burst'] * self._terms['redshift'])
-        pers_factor = self._terms['mass_ratio'] / (self._lum_to_flux['pers'] * self._terms['redshift'])
+        fluence_factor = phi / burst_lum_to_flux
+        burst_factor = phi / (burst_lum_to_flux * redshift)
+        pers_factor = phi / (pers_lum_to_flux * redshift)
 
-        self._terms['shift_factor'] = {'rate': 1 / self._terms['redshift'],
-                                       'fluence': self._terms['mass_ratio'] / self._lum_to_flux['burst'],
+        self._terms['shift_factor'] = {'rate': 1 / redshift,
+                                       'fluence': fluence_factor,
                                        'peak': burst_factor,
                                        'fedd': burst_factor,
                                        'fper': pers_factor,
