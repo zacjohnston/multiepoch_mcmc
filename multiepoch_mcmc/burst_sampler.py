@@ -386,11 +386,13 @@ class BurstSampler:
                                       'fper': self._flux_factors['pers'],
                                       }
 
+        mass_on_red = self._terms['mass_ratio'] / self._terms['redshift']
+
         self._terms['gr_factor'] = {'rate': 1 / self._terms['redshift'],
                                     'fluence': self._terms['mass_ratio'],
-                                    'peak': self._terms['mass_ratio'] / self._terms['redshift'],
-                                    'fedd': self._terms['mass_ratio'] / self._terms['redshift'],
-                                    'fper': self._terms['mass_ratio'] / self._terms['redshift'],
+                                    'peak': mass_on_red,
+                                    'fedd': mass_on_red,
+                                    'fper': mass_on_red,
                                     }
 
     # ===============================================================
