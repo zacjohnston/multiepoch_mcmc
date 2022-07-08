@@ -290,6 +290,18 @@ class BurstSampler:
             self._analytic_local[:, idx] = self._terms[bvar]
             self._analytic_local[:, idx+1] = self._terms[bvar] * self._u_frac[bvar]
 
+    def _get_y_observer(self):
+        """Returns predicted model values (+ uncertainties) shifted to an observer frame
+
+        Returns: [n_epochs, n_bvars]
+        """
+        for i, bvar in enumerate(self.bvars):
+            i0 = 2 * i
+            i1 = i0 + 2
+
+            values = self._y_local[:, i0:i1]
+            self._y_observer[:, i0:i1] = values * self._terms['shift_factor'][bvar]
+
     # ===============================================================
     #                      Sample coordinates
     # ===============================================================
@@ -311,21 +323,6 @@ class BurstSampler:
                     key = f'{key}{i+1}'
 
                 self._x_epoch[i, j] = self._x_key[key]
-
-    # ===============================================================
-    #                      Observer conversions
-    # ===============================================================
-    def _get_y_observer(self):
-        """Returns predicted model values (+ uncertainties) shifted to an observer frame
-
-        Returns: [n_epochs, n_bvars]
-        """
-        for i, bvar in enumerate(self.bvars):
-            i0 = 2 * i
-            i1 = i0 + 2
-
-            values = self._y_local[:, i0:i1]
-            self._y_observer[:, i0:i1] = values * self._terms['shift_factor'][bvar]
 
     # ===============================================================
     #                      Analytic terms
