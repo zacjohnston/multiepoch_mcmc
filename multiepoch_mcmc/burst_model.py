@@ -76,6 +76,11 @@ class BurstModel:
     def _get_y_local(self):
         """Calculates model values for given coordinates
 
+        Assumes the following have already been executed:
+            - self._fill_x_key()
+            - self._get_x_epoch()
+            - self._get_all_terms()
+
         Returns: [n_epochs, n_bvars]
         """
         self._interpolate()
@@ -86,12 +91,19 @@ class BurstModel:
     def _interpolate(self):
         """Interpolates burst properties for N epochs
 
-        Returns: [n_epochs, n_interp_bvars]
+        Assumes the following have already been executed:
+            - self._fill_x_key()
+            - self._get_x_epoch()
         """
         self._interp_local = self._interpolator(x=self._x_epoch)
 
     def _get_analytic(self):
         """Calculates analytic burst properties
+
+        Assumes the following have already been executed:
+            - self._fill_x_key()
+            - self._get_x_epoch()
+            - self._get_all_terms()
         """
         for i, bvar in enumerate(self._analytic_bvars):
             idx = 2 * i
@@ -100,6 +112,12 @@ class BurstModel:
 
     def _get_y_observer(self):
         """Returns predicted model values (+ uncertainties) shifted to an observer frame
+
+        Assumes the following have already been executed:
+            - self._fill_x_key()
+            - self._get_x_epoch()
+            - self._get_all_terms()
+            - self._get_y_local()
 
         Returns: [n_epochs, n_bvars]
         """
