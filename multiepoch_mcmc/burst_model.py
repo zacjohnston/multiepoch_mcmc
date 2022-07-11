@@ -7,6 +7,20 @@ from multiepoch_mcmc.grid_interpolator import GridInterpolator
 
 class BurstModel:
     """Class to model bursts given a set of parameters
+
+    Attributes
+    ----------
+    bvars : [str]
+        burst variable keys
+    params : [str]
+        model parameter keys
+    system : str
+        name of bursting system being modelled
+
+    Methods
+    -------
+    sample(x)
+        Returns the predicted observables for given coordinates
     """
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)
     _kpc_to_cm = u.kpc.to(u.cm)
@@ -63,9 +77,7 @@ class BurstModel:
         x : 1Darray
             sample coordinates
         """
-        self._x = x
-        self._fill_x_key()
-        self._get_x_epoch()
+        self._unpack_coordinates(x)
         self._get_all_terms()
 
         self._get_y_local()
@@ -77,8 +89,7 @@ class BurstModel:
         """Calculates model values for given coordinates
 
         Assumes the following have already been executed:
-            - self._fill_x_key()
-            - self._get_x_epoch()
+            - self._unpack_coordinates()
             - self._get_all_terms()
 
         Returns: [n_epochs, n_bvars]
@@ -92,8 +103,7 @@ class BurstModel:
         """Interpolates burst properties for N epochs
 
         Assumes the following have already been executed:
-            - self._fill_x_key()
-            - self._get_x_epoch()
+            - self._unpack_coordinates()
         """
         self._interp_local = self._interpolator(x=self._x_epoch)
 
@@ -101,8 +111,7 @@ class BurstModel:
         """Calculates analytic burst properties
 
         Assumes the following have already been executed:
-            - self._fill_x_key()
-            - self._get_x_epoch()
+            - self._unpack_coordinates()
             - self._get_all_terms()
         """
         for i, bvar in enumerate(self._analytic_bvars):
@@ -114,12 +123,9 @@ class BurstModel:
         """Returns predicted model values (+ uncertainties) shifted to an observer frame
 
         Assumes the following have already been executed:
-            - self._fill_x_key()
-            - self._get_x_epoch()
+            - self._unpack_coordinates()
             - self._get_all_terms()
             - self._get_y_local()
-
-        Returns: [n_epochs, n_bvars]
         """
         for i, bvar in enumerate(self.bvars):
             i0 = 2 * i
@@ -131,13 +137,24 @@ class BurstModel:
     # ===============================================================
     #                      Sample coordinates
     # ===============================================================
+    def _unpack_coordinates(self, x):
+        """Unpacks sample coordinates
+
+        parameters
+        ----------
+        x : [n_params]
+        """
+        self._x = x
+        self._fill_x_key()
+        self._get_x_epoch_array()
+
     def _fill_x_key(self):
         """Fills dictionary of sample coordinates
         """
         for i, key in enumerate(self.params):
             self._x_key[key] = self._x[i]
 
-    def _get_x_epoch(self):
+    def _get_x_epoch_array(self):
         """Reshapes sample coordinates into epoch array: [n_epochs, n_epoch_params]
 
         Assumes the following have already been executed:
@@ -157,8 +174,7 @@ class BurstModel:
         """Calculate all derived/analytic terms
 
         Assumes the following have already been executed:
-            - self._fill_x_key()
-            - self._get_x_epoch()
+            - self._unpack_coordinates()
         """
         self._get_gravity_terms()
         self._get_conversion_terms()
@@ -168,8 +184,7 @@ class BurstModel:
         """Calculates gravity terms
 
         Assumes the following have already been executed:
-            - self._fill_x_key()
-            - self._get_x_epoch()
+            - self._unpack_coordinates()
         """
         mass_nw = gravity.mass_from_g(g_nw=self._x_key['g'],
                                       r_nw=self._kepler_radius)
@@ -194,8 +209,7 @@ class BurstModel:
         """Calculates unit & frame conversion terms
 
         Assumes the following have already been executed:
-            - self._fill_x_key()
-            - self._get_x_epoch()
+            - self._unpack_coordinates()
             - self._get_gravity_terms()
         """
         burst_lum_to_flux = 4 * np.pi * (self._x_key['d_b'] * self._kpc_to_cm)**2
@@ -221,8 +235,7 @@ class BurstModel:
         """Calculates analytic terms
 
         Assumes the following have already been executed:
-            - self._fill_x_key()
-            - self._get_x_epoch()
+            - self._unpack_coordinates()
             - self._get_gravity_terms()
             - self._get_conversion_terms()
         """
