@@ -20,7 +20,7 @@ class BurstModel:
     Methods
     -------
     sample(x)
-        Returns the predicted observables for given coordinates
+        Returns modelled burst properties for given sample coordinates
     """
     _mdot_edd = 1.75e-8 * (u.M_sun / u.year).to(u.g / u.s)
     _kpc_to_cm = u.kpc.to(u.cm)
@@ -72,14 +72,17 @@ class BurstModel:
     #                      Burst Sampling
     # ===============================================================
     def sample(self, x):
-        """Returns the predicted observables for given coordinates
+        """Returns the modelled burst properties for given coordinates
 
-        Returns: [n_epochs, n_bvars], [n_epochs, n_bvars]
+        Returns: y, u_y
+            - y: burst properties of array shape [n_epochs, n_bvars]
+            - u_y: corresponding uncertainites (same shape)
+
 
         Parameters
         ----------
         x : 1Darray
-            sample coordinates
+            sample coordinates, must match length and order of `params`
         """
         self._unpack_coordinates(x)
         self._get_all_terms()
@@ -145,6 +148,7 @@ class BurstModel:
         parameters
         ----------
         x : [n_params]
+            sample coordinates, must match length and order of `params`
         """
         self._x = x
         self._fill_x_key()
@@ -157,7 +161,7 @@ class BurstModel:
             self._x_key[key] = self._x[i]
 
     def _get_x_epoch_array(self):
-        """Reshapes sample coordinates into epoch array: [n_epochs, n_epoch_params]
+        """Reshapes sample coordinates into epoch array: [n_epochs, n_interp_params]
 
         Assumes the following have already been executed:
             - self._fill_x_key()
