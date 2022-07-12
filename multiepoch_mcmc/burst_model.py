@@ -37,7 +37,7 @@ class BurstModel:
         self._config = config.load_config(system=self.system)
 
         self.params = self._config['keys']['params']
-        self._epoch_params = self._config['interp']['params']
+        self._interp_params = self._config['interp']['params']
         self._epoch_unique = self._config['keys']['epoch_unique']
         self._n_epochs = len(self._config['obs']['epochs'])
 
@@ -45,23 +45,25 @@ class BurstModel:
         self._interp_bvars = self._config['keys']['interp_bvars']
         self._analytic_bvars = self._config['keys']['analytic_bvars']
 
+        self._n_params = len(self.params)
+        self._n_bvars = len(self.bvars)
+        self._n_interp = len(self._interp_bvars)
+        self._n_analytic = len(self._analytic_bvars)
+
         self._kepler_radius = self._config['grid']['kepler_radius']
         self._u_frac = self._config['lhood']['u_frac']
 
         # dynamic variables
-        self._x = np.empty(len(self.params))
+        self._x = np.empty(self._n_params)
         self._x_key = dict.fromkeys(self.params)
-        self._x_epoch = np.empty((self._n_epochs, len(self._epoch_params)))
+        self._x_epoch = np.empty((self._n_epochs, len(self._interp_params)))
         self._terms = {}
 
-        self._interp_local = np.empty([self._n_epochs, 2*len(self._interp_bvars)])
-        self._analytic_local = np.empty([self._n_epochs, 2*len(self._analytic_bvars)])
-
-        self._y_local = np.empty([self._n_epochs, 2*len(self.bvars)])
-        self._y = np.empty_like(self._y_local)
+        self._y = np.empty([self._n_epochs, self._n_bvars])
+        self._u_y = np.empty_like(self._y)
 
         self._interpolator = GridInterpolator(file=self._config['interp']['file'],
-                                              params=self._epoch_params,
+                                              params=self._interp_params,
                                               bvars=self._config['interp']['bvars'],
                                               reconstruct=False,
                                               ).interpolate
@@ -72,7 +74,7 @@ class BurstModel:
     def sample(self, x):
         """Returns the predicted observables for given coordinates
 
-        Returns: [n_epochs, n_bvars]
+        Returns: [n_epochs, n_bvars], [n_epochs, n_bvars]
 
         Parameters
         ----------
@@ -85,7 +87,7 @@ class BurstModel:
         self._get_y_local()
         self._get_y_observer()
 
-        return self._y
+        return self._y, self._u_y
 
     def _get_y_local(self):
         """Calculates model values for given coordinates
@@ -99,15 +101,16 @@ class BurstModel:
         self._get_interpolated()
         self._get_analytic()
 
-        self._y_local = np.concatenate([self._interp_local, self._analytic_local], axis=1)
-
     def _get_interpolated(self):
         """Interpolates burst properties for N epochs
 
         Assumes the following have already been executed:
             - self._unpack_coordinates()
         """
-        self._interp_local = self._interpolator(x=self._x_epoch)
+        y_interp = self._interpolator(x=self._x_epoch)
+
+        self._y[:, :self._n_interp] = y_interp[:, ::2]
+        self._u_y[:, :self._n_interp] = y_interp[:, 1::2]
 
     def _get_analytic(self):
         """Calculates analytic burst properties
@@ -117,9 +120,9 @@ class BurstModel:
             - self._get_all_terms()
         """
         for i, bvar in enumerate(self._analytic_bvars):
-            idx = 2 * i
-            self._analytic_local[:, idx] = self._terms[bvar]
-            self._analytic_local[:, idx+1] = self._terms[bvar] * self._u_frac[bvar]
+            idx = self._n_interp + i
+            self._y[:, idx] = self._terms[bvar]
+            self._u_y[:, idx] = self._terms[bvar] * self._u_frac[bvar]
 
     def _get_y_observer(self):
         """Returns predicted model values (+ uncertainties) shifted to an observer frame
@@ -130,11 +133,8 @@ class BurstModel:
             - self._get_y_local()
         """
         for i, bvar in enumerate(self.bvars):
-            i0 = 2 * i
-            i1 = i0 + 2
-
-            values = self._y_local[:, i0:i1]
-            self._y[:, i0:i1] = values * self._terms['shift_factor'][bvar]
+            self._y[:, i] *= self._terms['shift_factor'][bvar]
+            self._u_y[:, i] *= self._terms['shift_factor'][bvar]
 
     # ===============================================================
     #                      Sample coordinates
@@ -163,7 +163,7 @@ class BurstModel:
             - self._fill_x_key()
         """
         for i in range(self._n_epochs):
-            for j, key in enumerate(self._epoch_params):
+            for j, key in enumerate(self._interp_params):
                 if key in self._epoch_unique:
                     key = f'{key}{i+1}'
 
@@ -242,7 +242,7 @@ class BurstModel:
             - self._get_conversion_terms()
         """
         # Note: actually luminosity until converted
-        mdot = self._x_epoch[:, self._epoch_params.index('mdot')]
+        mdot = self._x_epoch[:, self._interp_params.index('mdot')]
         self._terms['fper'] = mdot * self._terms['mdot_to_lum']
 
         # Note: actually luminosity until converted

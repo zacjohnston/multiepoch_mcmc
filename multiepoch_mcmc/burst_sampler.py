@@ -62,9 +62,12 @@ class BurstSampler:
         self.n_dim = len(self.params)
 
         self._grid_bounds = self._config['grid']['bounds']
-        self._weights = self._config['lhood']['weights']
         self._priors = self._config['lhood']['priors']
         self.x_start = self._config['grid']['x_start']
+
+        self.weights = np.zeros(len(self.bvars))
+        for i, bvar in enumerate(self.bvars):
+            self.weights[i] = self._config['lhood']['weights'][bvar]
 
         self._obs = ObsData(system=self.system, epochs=self.epochs)
         self.obs_data = self._obs.data
@@ -91,10 +94,10 @@ class BurstSampler:
             return self._zero_lhood
 
         # ===== Sample model burst variables =====
-        y = self.model.sample(x)
+        y, u_y = self.model.sample(x)
 
         # ===== Evaluate likelihood against observed data =====
-        lh = self.compare(y)
+        lh = self.compare(y, u_y)
         lhood = lp + lh
 
         return lhood
@@ -123,8 +126,11 @@ class BurstSampler:
 
         return prior_lhood
 
-    def compare(self, y):
+    def compare(self, y, u_y):
         """Returns log-likelihood for all burst variables against observations
+
+        Calculates difference between modelled and observed values.
+        All arrays must be of same shape
 
         Returns: float
 
@@ -132,42 +138,12 @@ class BurstSampler:
         ----------
         y : [n_epochs, n_bvars]
             burst variables for all epochs in observer frame
+        u_y : [n_epochs, n_bvars]
+            corresponding uncertainties
         """
-        lh = 0.0
+        inv_sigma2 = 1 / (u_y**2 + self._obs.u_y**2)
 
-        for i, bvar in enumerate(self.bvars):
-            bvar_idx = 2 * i
-            u_bvar_idx = bvar_idx + 1
-
-            model = y[:, bvar_idx]
-            u_model = y[:, u_bvar_idx]
-
-            lh += self._compare_bvar(model=model, u_model=u_model, bvar=bvar)
-
-        return lh
-
-    def _compare_bvar(self, model, u_model, bvar):
-        """Returns log-likelihood of given model values
-
-        Calculates difference between modelled and observed values.
-        All provided arrays must be the same length
-
-        Parameters
-        ----------
-        model : 1darray
-            Model values for particular property
-        u_model : 1darray
-            Corresponding model uncertainties
-        bvar : str
-            burst property being compared
-        """
-        obs = self.obs_data[bvar]
-        u_obs = self.obs_data[f'u_{bvar}']
-
-        weight = self._weights[bvar]
-        inv_sigma2 = 1 / (u_model ** 2 + u_obs ** 2)
-
-        lh = -0.5 * weight * ((model - obs) ** 2 * inv_sigma2
-                              + np.log(2 * np.pi / inv_sigma2))
+        lh = -0.5 * self.weights * ((y - self._obs.y)**2 * inv_sigma2
+                                    + np.log(2 * np.pi / inv_sigma2))
 
         return lh.sum()
