@@ -9,16 +9,18 @@ class ObsData:
 
     Attributes
     ----------
-    system : str
-        name of bursting system
+    bvars : [str]
+        list of burst variables to use
     epochs : [int]
         list of epoch years to use
     data : {}
         observation data by bvar key
+    system : str
+        name of bursting system
     y : [n_epochs, n_bvars]
-        epoch array of burst data
+        2D array of burst properties vs. epoch
     u_y : [n_epochs, n_bvars]
-        epoch array of uncertainties
+        corresponding uncertainties to `y`
     """
 
     def __init__(self,
