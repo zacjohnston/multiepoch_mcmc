@@ -6,6 +6,7 @@ from . import burst_model
 from . import mcmc
 from . import burst_sampler
 from . import obs_data
+from . import plotter
 
 __all__ = ['accretion',
            'burst_sampler',
@@ -15,4 +16,5 @@ __all__ = ['accretion',
            'grid_interpolator',
            'mcmc',
            'obs_data',
+           'plotter',
            ]
