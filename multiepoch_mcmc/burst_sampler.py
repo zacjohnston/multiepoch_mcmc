@@ -60,10 +60,7 @@ class BurstSampler:
         """
         self.system = system
         self._config = config.load_config(system=self.system)
-
         self.epochs = self._config['obs']['epochs']
-        self._epoch_params = self._config['interp']['params']
-        self._n_epochs = len(self.epochs)
 
         self.params = self._config['keys']['params']
         self.bvars = self._config['keys']['bvars']
@@ -78,7 +75,6 @@ class BurstSampler:
             self.weights[i] = self._config['lhood']['weights'][bvar]
 
         self.obs = ObsData(system=self.system, epochs=self.epochs)
-
         self.model = BurstModel(system=self.system)
 
     # ===============================================================
