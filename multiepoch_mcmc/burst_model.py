@@ -53,8 +53,10 @@ class BurstModel:
         self._x_key = dict.fromkeys(self.params)
         self._x_epoch = np.empty((self._n_epochs, len(self._epoch_params)))
         self._terms = {}
+
         self._interp_local = np.empty([self._n_epochs, 2*len(self._interp_bvars)])
         self._analytic_local = np.empty([self._n_epochs, 2*len(self._analytic_bvars)])
+
         self._y_local = np.empty([self._n_epochs, 2*len(self.bvars)])
         self._y = np.empty_like(self._y_local)
 
@@ -94,12 +96,12 @@ class BurstModel:
 
         Returns: [n_epochs, n_bvars]
         """
-        self._interpolate()
+        self._get_interpolated()
         self._get_analytic()
 
         self._y_local = np.concatenate([self._interp_local, self._analytic_local], axis=1)
 
-    def _interpolate(self):
+    def _get_interpolated(self):
         """Interpolates burst properties for N epochs
 
         Assumes the following have already been executed:
