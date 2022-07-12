@@ -12,19 +12,19 @@ class GridInterpolator:
 
     Attributes
     ----------
+    bvars : [str]
+        list of burst variables
     file : str
         filename of model grid located in 'data/model_grid/'
     grid : pd.DataFrame
         table of model grid data
     params : [str]
         list of model parameters
-    bvars : [str]
-        list of burst variables
 
     Methods
     -------
     interpolate(x)
-        Interpolates burst variables at given grid coordinate
+        Interpolates burst variables at given grid coordinates
     """
 
     def __init__(self,
