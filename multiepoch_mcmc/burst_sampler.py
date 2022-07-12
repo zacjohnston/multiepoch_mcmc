@@ -91,10 +91,10 @@ class BurstSampler:
             return self._zero_lhood
 
         # ===== Sample model burst variables =====
-        y_observer = self.model.sample(x)
+        y = self.model.sample(x)
 
         # ===== Evaluate likelihood against observed data =====
-        lh = self.compare(y_observer)
+        lh = self.compare(y)
         lhood = lp + lh
 
         return lhood
@@ -123,14 +123,14 @@ class BurstSampler:
 
         return prior_lhood
 
-    def compare(self, y_observer):
+    def compare(self, y):
         """Returns log-likelihood for all burst variables against observations
 
         Returns: float
 
         Parameters
         ----------
-        y_observer : [n_epochs, n_bvars]
+        y : [n_epochs, n_bvars]
             burst variables for all epochs in observer frame
         """
         lh = 0.0
@@ -139,8 +139,8 @@ class BurstSampler:
             bvar_idx = 2 * i
             u_bvar_idx = bvar_idx + 1
 
-            model = y_observer[:, bvar_idx]
-            u_model = y_observer[:, u_bvar_idx]
+            model = y[:, bvar_idx]
+            u_model = y[:, u_bvar_idx]
 
             lh += self._compare_bvar(model=model, u_model=u_model, bvar=bvar)
 

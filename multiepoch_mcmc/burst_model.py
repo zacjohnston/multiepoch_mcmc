@@ -56,7 +56,7 @@ class BurstModel:
         self._interp_local = np.empty([self._n_epochs, 2*len(self._interp_bvars)])
         self._analytic_local = np.empty([self._n_epochs, 2*len(self._analytic_bvars)])
         self._y_local = np.empty([self._n_epochs, 2*len(self.bvars)])
-        self._y_observer = np.empty_like(self._y_local)
+        self._y = np.empty_like(self._y_local)
 
         self._interpolator = GridInterpolator(file=self._config['interp']['file'],
                                               params=self._epoch_params,
@@ -83,7 +83,7 @@ class BurstModel:
         self._get_y_local()
         self._get_y_observer()
 
-        return self._y_observer
+        return self._y
 
     def _get_y_local(self):
         """Calculates model values for given coordinates
@@ -132,7 +132,7 @@ class BurstModel:
             i1 = i0 + 2
 
             values = self._y_local[:, i0:i1]
-            self._y_observer[:, i0:i1] = values * self._terms['shift_factor'][bvar]
+            self._y[:, i0:i1] = values * self._terms['shift_factor'][bvar]
 
     # ===============================================================
     #                      Sample coordinates
