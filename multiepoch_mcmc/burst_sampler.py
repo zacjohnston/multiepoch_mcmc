@@ -90,7 +90,7 @@ class BurstSampler:
         except ZeroLhood:
             return self._zero_lhood
 
-        # ===== Sample burst variables =====
+        # ===== Sample model burst variables =====
         y_observer = self.model.sample(x)
 
         # ===== Evaluate likelihood against observed data =====

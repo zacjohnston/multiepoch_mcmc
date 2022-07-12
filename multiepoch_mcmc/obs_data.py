@@ -10,28 +10,49 @@ class ObsData:
     Attributes
     ----------
     system : str
+        name of bursting system
     epochs : [int]
+        list of epoch years to use
     data : {}
+        observation data by bvar key
+    y : [n_epochs, n_bvars]
+        epoch array of burst data
+    u_y : [n_epochs, n_bvars]
+        epoch array of uncertainties
     """
 
     def __init__(self,
                  system='gs1826',
                  epochs=(1998, 2000, 2007),
+                 bvars=('rate', 'fluence', 'peak', 'fper', 'fedd'),
                  ):
         """
         Parameters
         ----------
         system : str
         epochs : [int]
+        bvars : [str]
         """
         self.system = system
         self.epochs = epochs
+        self.bvars = bvars
 
         self._table = None
         self.data = None
 
+        self.y = np.full([len(epochs), len(bvars)], np.nan)
+        self.u_y = np.full_like(self.y, np.nan)
+
         self._load_table()
         self._unpack_data()
+        self._fill_epoch_array()
+
+    def _fill_epoch_array(self):
+        """Fills epoch array with burst variables
+        """
+        for i, bvar in enumerate(self.bvars):
+            self.y[:, i] = self.data[bvar]
+            self.u_y[:, i] = self.data[f'u_{bvar}']
 
     def _unpack_data(self):
         """Unpacks observed burst data from loaded table
