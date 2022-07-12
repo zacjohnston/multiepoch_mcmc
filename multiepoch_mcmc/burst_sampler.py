@@ -21,21 +21,29 @@ class BurstSampler:
         burst variable keys
     epochs : [int]
         observation epochs to model
-    obs_data : {}
-        observed burst variables to compare to
+    model : BurstModel
+        burst model to sample
+    n_dim : int
+        number of model dimensions (params)
+    obs : ObsData
+        observed burst data to compare to
     params : [str]
         model parameter keys
     system : str
         name of bursting system being modelled
+    weights : [n_bvars]
+        weight assigned to each bvar when computing likelihood
+    x_start : [n_dim]
+        coordinates of starting point for sampling
 
     Methods
     -------
     lhood(x)
         Calculates log-likelihood for given sample coordinates
-    sample(x)
-        Returns the modelled burst variables at given sample coordinates
     compare(model, u_model, bvar)
         Returns log-likelihood for given model-observation comparison
+    sample(x)
+        Returns the modelled burst variables at given sample coordinates
     lnprior(x)
         Returns prior likelihoods for given sample coordinates
     """
@@ -69,8 +77,7 @@ class BurstSampler:
         for i, bvar in enumerate(self.bvars):
             self.weights[i] = self._config['lhood']['weights'][bvar]
 
-        self._obs = ObsData(system=self.system, epochs=self.epochs)
-        self.obs_data = self._obs.data
+        self.obs = ObsData(system=self.system, epochs=self.epochs)
 
         self.model = BurstModel(system=self.system)
 
@@ -127,23 +134,20 @@ class BurstSampler:
         return prior_lhood
 
     def compare(self, y, u_y):
-        """Returns log-likelihood for all burst variables against observations
-
-        Calculates difference between modelled and observed values.
-        All arrays must be of same shape
+        """Returns log-likelihood for model burst(s) against observations
 
         Returns: float
 
         Parameters
         ----------
         y : [n_epochs, n_bvars]
-            burst variables for all epochs in observer frame
+            model burst variables in observer frame
         u_y : [n_epochs, n_bvars]
             corresponding uncertainties
         """
-        inv_sigma2 = 1 / (u_y**2 + self._obs.u_y**2)
+        inv_sigma2 = 1 / (u_y**2 + self.obs.u_y**2)
 
-        lh = -0.5 * self.weights * ((y - self._obs.y)**2 * inv_sigma2
+        lh = -0.5 * self.weights * (inv_sigma2 * (y - self.obs.y)**2
                                     + np.log(2 * np.pi / inv_sigma2))
 
         return lh.sum()
