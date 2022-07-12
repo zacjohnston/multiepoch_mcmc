@@ -88,12 +88,12 @@ class BurstModel:
         self._get_all_terms()
 
         self._get_y_local()
-        self._get_y_observer()
+        self._shift_to_observer()
 
         return self._y, self._u_y
 
     def _get_y_local(self):
-        """Calculates model values for given coordinates
+        """Calculates model values for given coordinates (in local NS frame)
 
         Assumes the following have already been executed:
             - self._unpack_coordinates()
@@ -105,7 +105,7 @@ class BurstModel:
         self._get_analytic()
 
     def _get_interpolated(self):
-        """Interpolates burst properties for N epochs
+        """Interpolates burst properties for all epochs
 
         Assumes the following have already been executed:
             - self._unpack_coordinates()
@@ -127,7 +127,7 @@ class BurstModel:
             self._y[:, idx] = self._terms[bvar]
             self._u_y[:, idx] = self._terms[bvar] * self._u_frac[bvar]
 
-    def _get_y_observer(self):
+    def _shift_to_observer(self):
         """Returns predicted model values (+ uncertainties) shifted to an observer frame
 
         Assumes the following have already been executed:
