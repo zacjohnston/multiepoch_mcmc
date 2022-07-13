@@ -39,6 +39,7 @@ class MCPlotter:
         self.filename = self._backend.filename
         self.lhood = self._backend.get_log_prob()
         self.accept_frac = self._backend.accepted.mean() / self.n_steps
+
         if (discard is None) or (thin is None) or (tau is None):
             print('Calculating autocorrelation time')
             self.tau = self._backend.get_autocorr_time(tol=0)
@@ -49,7 +50,7 @@ class MCPlotter:
             self.discard = discard
             self.thin = thin
 
-        self.n_autocorr = self.n_steps / self.tau.mean()
+        self.n_autocorr = int(self.n_steps / self.tau.mean())
 
         print('Unpacking chain')
         self.chain = self._backend.get_chain(flat=True,
@@ -69,6 +70,7 @@ class MCPlotter:
         self.summary = self._cc.analysis.get_summary()
 
         self.chain_stats = {'total steps': self.n_steps,
+                            'autocorr steps': self.n_autocorr,
                             'mean tau': int(self.tau.mean()),
                             'discard': self.discard,
                             'thin': self.thin,
