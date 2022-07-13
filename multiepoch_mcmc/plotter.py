@@ -1,7 +1,7 @@
 import numpy as np
-import os
 import matplotlib.pyplot as plt
 import chainconsumer
+import emcee
 
 from multiepoch_mcmc import mcmc, config
 
@@ -33,7 +33,6 @@ class MCPlotter:
         self.n_steps = self._backend.iteration
         self.filename = self._backend.filename
         self.lhood = self._backend.get_log_prob()
-
         self.accept_frac = self._backend.accepted.mean() / self.n_steps
 
         print('Calculating autocorrelation time')
@@ -48,3 +47,31 @@ class MCPlotter:
 
         self._cc = chainconsumer.ChainConsumer()
         self._cc.add_chain(self.chain, parameters=self.params)
+
+        self._cc.configure(kde=False,
+                           smooth=0,
+                           sigmas=np.linspace(0, 2, 5),
+                           summary=False,
+                           usetex=False)
+
+        self.summary = self._cc.get_summary()
+
+    def plot_1d(self,
+                filename=None):
+        """Plot 1D marginilized posterior distributions
+
+        Parameters
+        ----------
+        filename : str
+        """
+        self._cc.plotter.plot_distributions(filename=filename)
+
+    def plot_2d(self,
+                filename=None):
+        """Plot 2D marginilized posterior distributions (i.e. corner plot)
+
+        Parameters
+        ----------
+        filename : str
+        """
+        self._cc.plotter.plot(filename=filename)
