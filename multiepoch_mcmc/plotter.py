@@ -39,7 +39,6 @@ class MCPlotter:
         self.filename = self._backend.filename
         self.lhood = self._backend.get_log_prob()
         self.accept_frac = self._backend.accepted.mean() / self.n_steps
-
         if (discard is None) or (thin is None) or (tau is None):
             print('Calculating autocorrelation time')
             self.tau = self._backend.get_autocorr_time(tol=0)
@@ -57,6 +56,7 @@ class MCPlotter:
                                              discard=self.discard,
                                              thin=self.thin)
 
+        self.n_samples = len(self.chain)
         self._cc = chainconsumer.ChainConsumer()
         self._cc.add_chain(self.chain, parameters=self.params)
 
@@ -66,7 +66,42 @@ class MCPlotter:
                            summary=False,
                            usetex=False)
 
-        self.summary = self._cc.get_summary()
+        self.summary = self._cc.analysis.get_summary()
+
+        self.chain_stats = {'total steps': self.n_steps,
+                            'mean tau': int(self.tau.mean()),
+                            'discard': self.discard,
+                            'thin': self.thin,
+                            'used steps': int(self.n_samples / self.n_walkers),
+                            'used samples': self.n_samples,
+                            }
+
+        self.print_summary()
+
+    def print_summary(self):
+        """Print summary statistics for 1D marginilized posteriors
+        """
+        chain_title = 'Chain stats'
+        print(f'\n{chain_title}\n' + len(chain_title)*'-')
+        max_len = len(max(self.chain_stats.keys(), key=len))
+
+        for key, val in self.chain_stats.items():
+            print(f'{key.ljust(max_len)} = {val}')
+
+        title = 'Max likelihood estimates'
+        print(f'\n{title}\n' + len(title)*'-')
+
+        max_len = len(max(self.params, key=len))
+
+        for param, summ in self.summary.items():
+            if None in summ:
+                print(f'{param.ljust(max_len)} = unconstrained!')
+            else:
+                val = summ[1]
+                minus = val - summ[0]
+                plus = summ[2] - val
+
+                print(f'{param.ljust(max_len)} = {val:.3f}  +{plus:.3f}  -{minus:.3f}')
 
     def plot_1d(self,
                 filename=None):
@@ -87,21 +122,3 @@ class MCPlotter:
         filename : str
         """
         self._cc.plotter.plot(filename=filename)
-
-    def print_summary(self):
-        """Print summary statistics for 1D marginilized posteriors
-        """
-        max_len = len(max(self.params, key=len))
-
-        for param, summ in self.summary.items():
-            if None in summ:
-                print(f'{param.ljust(max_len)} = unconstrained!')
-            else:
-                val = summ[1]
-                _min = summ[0]
-                _max = summ[2]
-
-                minus = val - _min
-                plus = _max - val
-
-                print(f'{param.ljust(max_len)} = {val:.3f} +{plus:.3f} -{minus:.3f}')
