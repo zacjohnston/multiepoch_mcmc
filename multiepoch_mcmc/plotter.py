@@ -14,12 +14,17 @@ class MCPlotter:
     def __init__(self,
                  system='gs1826',
                  n_walkers=1024,
+                 discard=None,
+                 thin=None,
+                 tau=None,
                  ):
         """
         Parameters
         ----------
         system : str
-        n_walkers
+        n_walkers : int
+        discard : bool
+        thin : bool
         """
         self.system = system
         self.n_walkers = n_walkers
@@ -35,10 +40,17 @@ class MCPlotter:
         self.lhood = self._backend.get_log_prob()
         self.accept_frac = self._backend.accepted.mean() / self.n_steps
 
-        print('Calculating autocorrelation time')
-        self.tau = self._backend.get_autocorr_time(tol=0)
-        self.thin = int(0.5 * self.tau.min())
-        self.discard = int(2 * self.tau.max())
+        if (discard is None) or (thin is None) or (tau is None):
+            print('Calculating autocorrelation time')
+            self.tau = self._backend.get_autocorr_time(tol=0)
+            self.discard = int(2 * self.tau.max())
+            self.thin = int(0.5 * self.tau.min())
+        else:
+            self.tau = tau
+            self.discard = discard
+            self.thin = thin
+
+        self.n_autocorr = self.n_steps / self.tau.mean()
 
         print('Unpacking chain')
         self.chain = self._backend.get_chain(flat=True,
@@ -75,3 +87,21 @@ class MCPlotter:
         filename : str
         """
         self._cc.plotter.plot(filename=filename)
+
+    def print_summary(self):
+        """Print summary statistics for 1D marginilized posteriors
+        """
+        max_len = len(max(self.params, key=len))
+
+        for param, summ in self.summary.items():
+            if None in summ:
+                print(f'{param.ljust(max_len)} = unconstrained!')
+            else:
+                val = summ[1]
+                _min = summ[0]
+                _max = summ[2]
+
+                minus = val - _min
+                plus = _max - val
+
+                print(f'{param.ljust(max_len)} = {val:.3f} +{plus:.3f} -{minus:.3f}')
