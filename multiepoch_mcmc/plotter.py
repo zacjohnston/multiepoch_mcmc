@@ -35,10 +35,13 @@ class MCPlotter:
 
         self.params = self._config['keys']['params']
         self.n_dim = len(self.params)
+        self._kepler_radius = self._config['grid']['kepler_radius']
 
         self.param_labels = []
-        for param in self.params:
+        self._idx = {}
+        for i, param in enumerate(self.params):
             self.param_labels += [self._config_plt['strings']['params'][param]]
+            self._idx[param] = i
 
         self._backend = mcmc.open_backend(system=system, n_walkers=n_walkers)
 
@@ -119,9 +122,24 @@ class MCPlotter:
         """Unpacks MCMC chains
         """
         chains = {}
-        chains['main'] = self._backend.get_chain(flat=True,
-                                                 discard=self.discard,
-                                                 thin=self.thin)
+        main = self._backend.get_chain(flat=True,
+                                       discard=self.discard,
+                                       thin=self.thin)
+
+        mass_nw = gravity.mass_from_g(g_nw=main[:, self._idx['g']],
+                                      r_nw=self._kepler_radius)
+
+        chains['main'] = main
+        chains['mass_nw'] = mass_nw
+        #
+        # phi = self._x_key['mass'] / mass_nw
+        #
+        # r_ratio = gravity.get_xi(r_nw=self._kepler_radius,
+        #                          m_nw=mass_nw,
+        #                          phi=phi)
+        #
+        # redshift = gravity.redshift_from_xi_phi(phi=phi, xi=r_ratio)
+
         return chains
 
     def _get_summary_stats(self):
