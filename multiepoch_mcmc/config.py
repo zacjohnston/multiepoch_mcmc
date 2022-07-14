@@ -6,20 +6,34 @@ import configparser
 from multiepoch_mcmc import priors
 
 
-def load_config(system):
-    """Loads config settings from file
+def load_system_config(system):
+    """Loads sysetm config settings from file
 
     Parameters
     ----------
     system : str
     """
+    config_dict = load_config(name=system)
+    config_dict['lhood']['priors'] = get_priors(config_dict)
+    config_dict['grid']['bounds'] = np.array(config_dict['grid']['bounds'])
+
+    return config_dict
+
+
+def load_config(name):
+    """Loads config settings from file
+
+    Parameters
+    ----------
+    name : str
+    """
     path = os.path.dirname(__file__)
-    filepath = os.path.join(path, '..', 'config', f'{system}.ini')
+    filepath = os.path.join(path, '..', 'config', f'{name}.ini')
 
     print(f'Loading config: {os.path.abspath(filepath)}')
 
     if not os.path.exists(filepath):
-        raise FileNotFoundError(f"Config file for system '{system}' not found")
+        raise FileNotFoundError(f"Config file for '{name}' not found")
 
     ini = configparser.ConfigParser()
     ini.read(filepath)
@@ -29,9 +43,6 @@ def load_config(system):
         config_dict[section] = {}
         for option in ini.options(section):
             config_dict[section][option] = ast.literal_eval(ini.get(section, option))
-
-    config_dict['lhood']['priors'] = get_priors(config_dict)
-    config_dict['grid']['bounds'] = np.array(config_dict['grid']['bounds'])
 
     return config_dict
 

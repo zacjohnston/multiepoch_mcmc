@@ -34,7 +34,7 @@ class BurstModel:
         system : str
         """
         self.system = system
-        self._config = config.load_config(system=self.system)
+        self._config = config.load_system_config(system=self.system)
 
         self.params = self._config['keys']['params']
         self._interp_params = self._config['interp']['params']

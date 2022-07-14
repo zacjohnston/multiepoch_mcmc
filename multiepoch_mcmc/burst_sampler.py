@@ -59,7 +59,7 @@ class BurstSampler:
             name of bursting system
         """
         self.system = system
-        self._config = config.load_config(system=self.system)
+        self._config = config.load_system_config(system=self.system)
         self.epochs = self._config['obs']['epochs']
 
         self.params = self._config['keys']['params']
