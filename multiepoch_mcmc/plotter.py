@@ -119,26 +119,29 @@ class MCPlotter:
                 print(f'{param.ljust(max_len)} = {val:.3f}  +{plus:.3f}  -{minus:.3f}')
 
     def _get_chains(self):
-        """Unpacks MCMC chains
+        """Unpacks MCMC chain and calculates derived quantities
         """
         chains = {}
-        main = self._backend.get_chain(flat=True,
-                                       discard=self.discard,
-                                       thin=self.thin)
+        chain = self._backend.get_chain(flat=True,
+                                        discard=self.discard,
+                                        thin=self.thin)
 
-        mass_nw = gravity.mass_from_g(g_nw=main[:, self._idx['g']],
+        mass_nw = gravity.mass_from_g(g_nw=chain[:, self._idx['g']],
                                       r_nw=self._kepler_radius)
 
-        chains['main'] = main
+        phi = chain[:, self._idx['mass']] / mass_nw
+
+        r_ratio = gravity.get_xi(r_nw=self._kepler_radius,
+                                 m_nw=mass_nw,
+                                 phi=phi)
+
+        redshift = gravity.redshift_from_xi_phi(phi=phi, xi=r_ratio)
+
+        chains['main'] = chain
         chains['mass_nw'] = mass_nw
-        #
-        # phi = self._x_key['mass'] / mass_nw
-        #
-        # r_ratio = gravity.get_xi(r_nw=self._kepler_radius,
-        #                          m_nw=mass_nw,
-        #                          phi=phi)
-        #
-        # redshift = gravity.redshift_from_xi_phi(phi=phi, xi=r_ratio)
+        chains['radius'] = phi * self._kepler_radius
+        chains['r_ratio'] = r_ratio
+        chains['redshift'] = redshift
 
         return chains
 
