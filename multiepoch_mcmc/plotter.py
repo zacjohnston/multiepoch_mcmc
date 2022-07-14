@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import chainconsumer
 
-from multiepoch_mcmc import mcmc, config
+from multiepoch_mcmc import mcmc, config, gravity
 
 
 class MCPlotter:
@@ -60,13 +60,13 @@ class MCPlotter:
         self.n_autocorr = int(self.n_steps / self.tau.mean())
 
         print('Unpacking chain')
-        self.chain = self._backend.get_chain(flat=True,
-                                             discard=self.discard,
-                                             thin=self.thin)
+        self.chains = self._get_chains()
 
-        self.n_samples = len(self.chain)
+
+
+        self.n_samples = len(self.chains['main'])
         self._cc = chainconsumer.ChainConsumer()
-        self._cc.add_chain(self.chain, parameters=self.param_labels)
+        self._cc.add_chain(self.chains['main'], parameters=self.param_labels)
 
         self._cc.configure(kde=False,
                            smooth=0,
@@ -87,6 +87,9 @@ class MCPlotter:
 
         self.print_summary()
 
+    # ===============================================================
+    #                      Analysis
+    # ===============================================================
     def print_summary(self):
         """Print summary statistics for 1D marginilized posteriors
         """
@@ -112,6 +115,15 @@ class MCPlotter:
 
                 print(f'{param.ljust(max_len)} = {val:.3f}  +{plus:.3f}  -{minus:.3f}')
 
+    def _get_chains(self):
+        """Unpacks MCMC chains
+        """
+        chains = {}
+        chains['main'] = self._backend.get_chain(flat=True,
+                                                 discard=self.discard,
+                                                 thin=self.thin)
+        return chains
+
     def _get_summary_stats(self):
         """Get marginilized summary statistics from chain
         """
@@ -124,6 +136,9 @@ class MCPlotter:
 
         return summary
 
+    # ===============================================================
+    #                      Plotting
+    # ===============================================================
     def plot_1d(self,
                 filename=None):
         """Plot 1D marginilized posterior distributions
