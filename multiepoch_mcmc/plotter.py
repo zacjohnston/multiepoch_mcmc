@@ -146,7 +146,11 @@ class MCPlotter:
         derived = {'mass_nw': mass_nw,
                    'radius': phi * self._kepler_radius,
                    'r_ratio': r_ratio,
-                   'redshift': redshift}
+                   'redshift': redshift,
+                   'Mdot1': r_ratio * self.chain[:, self._idx['mdot1']],
+                   'Mdot2': r_ratio * self.chain[:, self._idx['mdot2']],
+                   'Mdot3': r_ratio * self.chain[:, self._idx['mdot3']],
+                   }
 
         return derived
 
