@@ -118,7 +118,9 @@ class MCPlotter:
                 print(f'{param.ljust(max_len)} = {val:.3f}  +{plus:.3f}  -{minus:.3f}')
 
     def _unpack_chain(self):
-        """Unpacks samples from main MCMC chain
+        """Unpacks chain of samples from full MCMC chain
+
+        Returns: [n_samples, n_dim]
         """
         chain = self._backend.get_chain(flat=True,
                                         discard=self.discard,
@@ -126,7 +128,9 @@ class MCPlotter:
         return chain
 
     def _get_derived(self):
-        """Calculates derived quantities from MCMC chain
+        """Calculates derived quantities from sample chain
+
+        Returns: {derived_param: [n_samples]}
         """
         mass_nw = gravity.mass_from_g(g_nw=self.chain[:, self._idx['g']],
                                       r_nw=self._kepler_radius)
@@ -148,6 +152,8 @@ class MCPlotter:
 
     def _get_summary_stats(self):
         """Get marginilized summary statistics from chain
+
+        Returns: {param: [low, peak, high]}
         """
         summ0 = self._cc.analysis.get_summary()
         summary = {}
@@ -169,7 +175,8 @@ class MCPlotter:
         ----------
         filename : str
         """
-        self._cc.plotter.plot_distributions(filename=filename, col_wrap=3)
+        plot = self._cc.plotter.plot_distributions(filename=filename, col_wrap=3)
+        return plot
 
     def plot_2d(self,
                 filename=None):
@@ -179,4 +186,5 @@ class MCPlotter:
         ----------
         filename : str
         """
-        self._cc.plotter.plot(filename=filename)
+        plot = self._cc.plotter.plot(filename=filename)
+        return plot
