@@ -2,6 +2,7 @@ import os
 import numpy as np
 import ast
 import configparser
+import matplotlib.pyplot as plt
 
 from multiepoch_mcmc import priors
 

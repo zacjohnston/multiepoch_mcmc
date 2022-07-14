@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import chainconsumer
-import emcee
 
 from multiepoch_mcmc import mcmc, config
 
@@ -29,9 +28,17 @@ class MCPlotter:
         self.system = system
         self.n_walkers = n_walkers
 
-        self._config = config.load_config(system)
+        self._config = config.load_system_config(system=system)
+        self._config_plt = config.load_config(name='plotting')
+
+        plt.rcParams.update(self._config_plt['plt']['rcparams'])
+
         self.params = self._config['keys']['params']
         self.n_dim = len(self.params)
+
+        self.param_labels = []
+        for param in self.params:
+            self.param_labels += [self._config_plt['strings']['params'][param]]
 
         self._backend = mcmc.open_backend(system=system, n_walkers=n_walkers)
 
@@ -59,7 +66,7 @@ class MCPlotter:
 
         self.n_samples = len(self.chain)
         self._cc = chainconsumer.ChainConsumer()
-        self._cc.add_chain(self.chain, parameters=self.params)
+        self._cc.add_chain(self.chain, parameters=self.param_labels)
 
         self._cc.configure(kde=False,
                            smooth=0,
@@ -67,7 +74,7 @@ class MCPlotter:
                            summary=False,
                            usetex=False)
 
-        self.summary = self._cc.analysis.get_summary()
+        self.summary = self._get_summary_stats()
 
         self.chain_stats = {'total steps': self.n_steps,
                             'autocorr steps': self.n_autocorr,
@@ -105,6 +112,18 @@ class MCPlotter:
 
                 print(f'{param.ljust(max_len)} = {val:.3f}  +{plus:.3f}  -{minus:.3f}')
 
+    def _get_summary_stats(self):
+        """Get marginilized summary statistics from chain
+        """
+        summ0 = self._cc.analysis.get_summary()
+        summary = {}
+
+        for i, val in enumerate(summ0.values()):
+            param = self.params[i]
+            summary[param] = val
+
+        return summary
+
     def plot_1d(self,
                 filename=None):
         """Plot 1D marginilized posterior distributions
@@ -113,7 +132,7 @@ class MCPlotter:
         ----------
         filename : str
         """
-        self._cc.plotter.plot_distributions(filename=filename)
+        self._cc.plotter.plot_distributions(filename=filename, col_wrap=3)
 
     def plot_2d(self,
                 filename=None):
