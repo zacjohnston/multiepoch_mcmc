@@ -65,8 +65,6 @@ class MCPlotter:
         print('Unpacking chain')
         self.chains = self._get_chains()
 
-
-
         self.n_samples = len(self.chains['main'])
         self._cc = chainconsumer.ChainConsumer()
         self._cc.add_chain(self.chains['main'], parameters=self.param_labels)
@@ -79,14 +77,14 @@ class MCPlotter:
 
         self.summary = self._get_summary_stats()
 
-        self.chain_stats = {'total steps': self.n_steps,
-                            'autocorr steps': self.n_autocorr,
-                            'mean tau': int(self.tau.mean()),
-                            'discard': self.discard,
-                            'thin': self.thin,
-                            'used steps': int(self.n_samples / self.n_walkers),
-                            'used samples': self.n_samples,
-                            }
+        self.stats = {'total steps': self.n_steps,
+                      'autocorr steps': self.n_autocorr,
+                      'mean tau': int(self.tau.mean()),
+                      'discard': self.discard,
+                      'thin': self.thin,
+                      'used steps': int(self.n_samples / self.n_walkers),
+                      'used samples': self.n_samples,
+                      }
 
         self.print_summary()
 
@@ -98,9 +96,9 @@ class MCPlotter:
         """
         chain_title = 'Chain stats'
         print(f'\n{chain_title}\n' + len(chain_title)*'-')
-        max_len = len(max(self.chain_stats.keys(), key=len))
+        max_len = len(max(self.stats.keys(), key=len))
 
-        for key, val in self.chain_stats.items():
+        for key, val in self.stats.items():
             print(f'{key.ljust(max_len)} = {val}')
 
         title = 'Max likelihood estimates'
