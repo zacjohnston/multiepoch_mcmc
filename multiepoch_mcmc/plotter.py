@@ -63,11 +63,12 @@ class MCPlotter:
         self.n_autocorr = int(self.n_steps / self.tau.mean())
 
         print('Unpacking chain')
-        self.chains = self._get_chains()
+        self.chain = self._unpack_chain()
+        self.derived = self._get_derived()
 
-        self.n_samples = len(self.chains['main'])
+        self.n_samples = len(self.chain)
         self._cc = chainconsumer.ChainConsumer()
-        self._cc.add_chain(self.chains['main'], parameters=self.param_labels)
+        self._cc.add_chain(self.chain, parameters=self.param_labels)
 
         self._cc.configure(kde=False,
                            smooth=0,
@@ -116,18 +117,21 @@ class MCPlotter:
 
                 print(f'{param.ljust(max_len)} = {val:.3f}  +{plus:.3f}  -{minus:.3f}')
 
-    def _get_chains(self):
-        """Unpacks MCMC chain and calculates derived quantities
+    def _unpack_chain(self):
+        """Unpacks samples from main MCMC chain
         """
-        chains = {}
         chain = self._backend.get_chain(flat=True,
                                         discard=self.discard,
                                         thin=self.thin)
+        return chain
 
-        mass_nw = gravity.mass_from_g(g_nw=chain[:, self._idx['g']],
+    def _get_derived(self):
+        """Calculates derived quantities from MCMC chain
+        """
+        mass_nw = gravity.mass_from_g(g_nw=self.chain[:, self._idx['g']],
                                       r_nw=self._kepler_radius)
 
-        phi = chain[:, self._idx['mass']] / mass_nw
+        phi = self.chain[:, self._idx['mass']] / mass_nw
 
         r_ratio = gravity.get_xi(r_nw=self._kepler_radius,
                                  m_nw=mass_nw,
@@ -135,13 +139,12 @@ class MCPlotter:
 
         redshift = gravity.redshift_from_xi_phi(phi=phi, xi=r_ratio)
 
-        chains['main'] = chain
-        chains['mass_nw'] = mass_nw
-        chains['radius'] = phi * self._kepler_radius
-        chains['r_ratio'] = r_ratio
-        chains['redshift'] = redshift
+        derived = {'mass_nw': mass_nw,
+                   'radius': phi * self._kepler_radius,
+                   'r_ratio': r_ratio,
+                   'redshift': redshift}
 
-        return chains
+        return derived
 
     def _get_summary_stats(self):
         """Get marginilized summary statistics from chain
