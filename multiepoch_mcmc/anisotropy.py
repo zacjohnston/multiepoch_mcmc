@@ -108,5 +108,6 @@ def load_table(model):
             table[keys[1]] = 1 / table[col]
 
     table['xi_b/xi_p'] = table['xi_b'] / table['xi_p']
+    table['xi_p/xi_b'] = 1 / table['xi_b/xi_p']
 
     return table

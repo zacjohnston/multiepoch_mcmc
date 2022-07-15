@@ -147,7 +147,9 @@ class MCPlotter:
         redshift = gravity.redshift_from_xi_phi(phi=phi, xi=r_ratio)
 
         xi_ratio = self.chain[:, self._idx['xi_ratio']]
-        inclination = self._disk_model.inclination(xi=xi_ratio, var='xi_b/xi_p')
+        inclination = self._disk_model.inclination(xi=xi_ratio, var='xi_p/xi_b')
+        xi_b = self._disk_model.anisotropy(inc=inclination, var='xi_b')
+        xi_p = self._disk_model.anisotropy(inc=inclination, var='xi_p')
 
         derived = {'mass_nw': mass_nw,
                    'radius': phi * self._kepler_radius,
@@ -157,6 +159,9 @@ class MCPlotter:
                    'Mdot2': r_ratio * self.chain[:, self._idx['mdot2']],
                    'Mdot3': r_ratio * self.chain[:, self._idx['mdot3']],
                    'inclination': inclination,
+                   'xi_b': xi_b,
+                   'xi_p': xi_p,
+                   'distance': self.chain[:, self._idx['d_b']] / np.sqrt(xi_b),
                    }
 
         return derived
