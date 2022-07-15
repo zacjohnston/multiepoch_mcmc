@@ -22,6 +22,21 @@ class DiskModel:
         self.table = load_table(model)
         self._interps = self._setup_interpolators()
 
+    def anisotropy(self,
+                   inc,
+                   var
+                   ):
+        """Returns anisotropy factor at given inclination
+
+        Parameters
+        ----------
+        inc : float or ndarray
+            inclination [deg]
+        var : str
+            anisotropy factor, e.g. 'xi_b'
+        """
+        return self._interps[var](inc)
+    
     def _setup_interpolators(self):
         """Interpolates anisotropy variable from table
         """
