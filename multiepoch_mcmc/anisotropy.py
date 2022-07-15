@@ -1,7 +1,7 @@
 import os
-import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
+from scipy.optimize import brentq
 
 
 class DiskModel:
@@ -40,14 +40,39 @@ class DiskModel:
                    ):
         """Returns anisotropy factor at given inclination
 
+        Returns : float or ndarray
+
         Parameters
         ----------
         inc : float or ndarray
             inclination [deg]
         var : str
-            anisotropy factor, e.g. 'xi_b'
+            name of anisotropy factor, e.g. 'xi_b'
         """
         return self._interps[var](inc)
+
+    def inclination(self,
+                    xi,
+                    var
+                    ):
+        """Returns inclination corresponding to given xi factor
+
+        Returns : float or ndarray
+
+        Parameters
+        ----------
+        xi : float or ndarray
+            xi factor value
+        var : str
+            name of anisotropy factor, e.g. 'xi_b'
+        """
+        interp = interp1d(x=self.table[var],
+                          y=self.table['inc'],
+                          bounds_error=False)
+
+        inc = interp(xi)
+
+        return inc
 
     def _setup_interpolators(self):
         """Interpolates anisotropy variable from table
@@ -87,5 +112,5 @@ def load_table(model):
             table[keys[1]] = 1 / table[col]
 
     table['xi_b/xi_p'] = table['xi_b'] / table['xi_p']
-    
+
     return table
