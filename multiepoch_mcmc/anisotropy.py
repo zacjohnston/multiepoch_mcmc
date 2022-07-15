@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 from scipy.interpolate import interp1d
-from scipy.optimize import brentq
 
 
 class DiskModel:
@@ -18,7 +17,9 @@ class DiskModel:
     Methods
     -------
     anisotropy(inc, var)
-        returns given anisotropy factor at given inclination
+        returns given anisotropy factor for given inclination
+    inclination(xi, var)
+        returns inclination corresponding to given xi factor
     """
 
     def __init__(self,
@@ -32,15 +33,15 @@ class DiskModel:
         """
         self.model = model
         self.table = load_table(model)
-        self._interps = self._setup_interpolators()
 
     def anisotropy(self,
                    inc,
                    var,
                    ):
-        """Returns anisotropy factor at given inclination
+        """Returns anisotropy factor for given inclination
 
         Returns : float or ndarray
+            returns np.nan if no solution
 
         Parameters
         ----------
@@ -49,7 +50,12 @@ class DiskModel:
         var : str
             name of anisotropy factor, e.g. 'xi_b'
         """
-        return self._interps[var](inc)
+        interp = interp1d(x=self.table['inc'],
+                          y=self.table[var],
+                          bounds_error=False)
+        xi = interp(inc)
+
+        return xi
 
     def inclination(self,
                     xi,
@@ -58,6 +64,7 @@ class DiskModel:
         """Returns inclination corresponding to given xi factor
 
         Returns : float or ndarray
+            returns np.nan if no solution
 
         Parameters
         ----------
@@ -73,17 +80,6 @@ class DiskModel:
         inc = interp(xi)
 
         return inc
-
-    def _setup_interpolators(self):
-        """Interpolates anisotropy variable from table
-        """
-        interps = {}
-
-        for var in self.table.columns:
-            if var != 'inc':
-                interps[var] = interp1d(x=self.table['inc'], y=self.table[var])
-
-        return interps
 
 
 def load_table(model):
