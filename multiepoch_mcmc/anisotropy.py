@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
@@ -19,6 +20,18 @@ class DiskModel:
         """
         self.model = model
         self.table = load_table(model)
+        self._interps = self._setup_interpolators()
+
+    def _setup_interpolators(self):
+        """Interpolates anisotropy variable from table
+        """
+        interps = {}
+
+        for var in self.table.columns:
+            if var != 'inc':
+                interps[var] = interp1d(x=self.table['inc'], y=self.table[var])
+
+        return interps
 
 
 def load_table(model,
