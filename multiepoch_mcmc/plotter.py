@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import chainconsumer
 
-from multiepoch_mcmc import mcmc, config, gravity
+from multiepoch_mcmc import mcmc, config, gravity, anisotropy
 
 
 class MCPlotter:
@@ -16,6 +16,7 @@ class MCPlotter:
                  discard=None,
                  thin=None,
                  tau=None,
+                 anisotropy_model='he16_a',
                  ):
         """
         Parameters
@@ -24,9 +25,11 @@ class MCPlotter:
         n_walkers : int
         discard : bool
         thin : bool
+        anisotropy_model : str
         """
         self.system = system
         self.n_walkers = n_walkers
+        self._disk_model = anisotropy.DiskModel(model=anisotropy_model)
 
         self._config = config.load_system_config(system=system)
         self._config_plt = config.load_config(name='plotting')
@@ -143,6 +146,9 @@ class MCPlotter:
 
         redshift = gravity.redshift_from_xi_phi(phi=phi, xi=r_ratio)
 
+        xi_ratio = self.chain[:, self._idx['xi_ratio']]
+        inclination = self._disk_model.inclination(xi=xi_ratio, var='xi_b/xi_p')
+
         derived = {'mass_nw': mass_nw,
                    'radius': phi * self._kepler_radius,
                    'r_ratio': r_ratio,
@@ -150,6 +156,7 @@ class MCPlotter:
                    'Mdot1': r_ratio * self.chain[:, self._idx['mdot1']],
                    'Mdot2': r_ratio * self.chain[:, self._idx['mdot2']],
                    'Mdot3': r_ratio * self.chain[:, self._idx['mdot3']],
+                   'inclination': inclination,
                    }
 
         return derived
