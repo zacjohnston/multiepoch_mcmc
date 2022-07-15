@@ -135,6 +135,7 @@ class MCPlotter:
 
         Returns: {derived_param: [n_samples]}
         """
+        print('Calculating derived quantities')
         mass_nw = gravity.mass_from_g(g_nw=self.chain[:, self._idx['g']],
                                       r_nw=self._kepler_radius)
 
