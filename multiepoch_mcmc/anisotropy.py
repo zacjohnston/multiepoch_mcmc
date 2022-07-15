@@ -86,4 +86,6 @@ def load_table(model):
         if len(keys) is 2:
             table[keys[1]] = 1 / table[col]
 
+    table['xi_b/xi_p'] = table['xi_b'] / table['xi_p']
+    
     return table
