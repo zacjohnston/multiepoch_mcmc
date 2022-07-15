@@ -7,6 +7,18 @@ from scipy.interpolate import interp1d
 class DiskModel:
     """
     Class for disk anisotropy model
+
+    Attributes
+    ----------
+    model : str
+        name of anisotropy disk model
+    table : pd.DataFrame
+        table of anisotropy values
+
+    Methods
+    -------
+    anisotropy(inc, var)
+        returns given anisotropy factor at given inclination
     """
 
     def __init__(self,
@@ -24,7 +36,7 @@ class DiskModel:
 
     def anisotropy(self,
                    inc,
-                   var
+                   var,
                    ):
         """Returns anisotropy factor at given inclination
 
@@ -36,7 +48,7 @@ class DiskModel:
             anisotropy factor, e.g. 'xi_b'
         """
         return self._interps[var](inc)
-    
+
     def _setup_interpolators(self):
         """Interpolates anisotropy variable from table
         """
