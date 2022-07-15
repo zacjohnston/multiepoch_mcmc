@@ -61,17 +61,13 @@ class DiskModel:
         return interps
 
 
-def load_table(model,
-               components=('p', 'b', 'd', 'r'),
-               ):
+def load_table(model):
     """Loads anisotropy table from file
 
     Parameters
     ----------
     model : str
         name of disk anisotropy model
-    components : [str]
-        list of anisotropy components (by suffix letter)
     """
     path = os.path.dirname(__file__)
     filename = f'{model}.csv'
@@ -84,7 +80,10 @@ def load_table(model,
         raise FileNotFoundError(f'No table exists for anisotropy model `{model}`')
 
     # unpack inverse values
-    for c in components:
-        table[f'xi_{c}'] = 1 / table[f'1/xi_{c}']
+    for col in table.columns:
+        keys = col.split('/')
+
+        if len(keys) is 2:
+            table[keys[1]] = 1 / table[col]
 
     return table
